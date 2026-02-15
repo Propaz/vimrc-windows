@@ -47,6 +47,8 @@ endif
 
 " --- UI & Display ---
 set number              " Show line numbers.
+set relativenumber      " Show relative line numbers for easier vertical movement.
+set scrolloff=8         " Keep 8 lines of context above/below the cursor.
 set ruler               " Show cursor position in the status line.
 set showmatch           " Show matching brackets.
 set title               " Set the window title to the file name.
@@ -91,9 +93,9 @@ Plug 'junegunn/fzf',  { 'dir': '~/.fzf' } " Fuzzy finder core
 Plug 'mbbill/undotree'           " Visualize undo history
 
 " Development & Git
-Plug 'tpope/vim-fugitive'        " Git wrapper
+Plug 'tpope/vim-fugitive', { 'on': ['G', 'Git'] } " Git wrapper
 Plug 'dense-analysis/ale'        " Asynchronous linter and fixer
-Plug 'Propaz/karate-linter'
+Plug 'Propaz/karate-linter', { 'for': ['cucumber', 'karate'] }
 
 " Utilities
 Plug 'neoclide/coc.nvim', {'branch': 'release'} " LSP/Intellisense engine
@@ -220,6 +222,7 @@ let mapleader=","
 " --- Toggles & System ---
 nnoremap <silent> <F2> :set paste!<CR>          " Toggle paste mode
 nnoremap <silent> <F5> :UndotreeToggle<CR>       " Toggle Undotree
+nnoremap <silent> <leader>nr :set relativenumber!<CR> " Toggle relative numbering
 nmap <leader>vm :e ~/_vimrc<CR>                  " Edit this vimrc
 nnoremap <silent> <C-q> :q<CR>                   " Close current window
 nmap <leader>w :w<CR>                           " Quick save
@@ -244,7 +247,7 @@ nmap <leader>b :buffer <Tab>                    " Switch buffer by name
 
 " Tab navigation
 nnoremap <C-t>     :tabnew<CR>
-inoremap <C-t>     <Esc>:tabnew<CR>
+inoremap <C-t>     <C-o>:tabnew<CR>
 nnoremap <leader>1 1gt
 nnoremap <leader>2 2gt
 nnoremap <leader>3 3gt
