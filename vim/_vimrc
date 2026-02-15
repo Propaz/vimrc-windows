@@ -82,11 +82,10 @@ set swapfile backup undofile
 call plug#begin('~/vimfiles/plugged')
 
 " Core
-Plug 'vim-airline/vim-airline'   " Status bar
+Plug 'itchyny/lightline.vim'     " Fast and lightweight status bar
 Plug 'morhetz/gruvbox'           " Color scheme
 
 " File & History
-Plug 'preservim/nerdtree'        " File explorer
 Plug 'junegunn/fzf.vim'          " Fuzzy finder integration
 Plug 'junegunn/fzf',  { 'dir': '~/.fzf' } " Fuzzy finder core
 Plug 'mbbill/undotree'           " Visualize undo history
@@ -97,7 +96,7 @@ Plug 'dense-analysis/ale'        " Asynchronous linter and fixer
 Plug 'Propaz/karate-linter'
 
 " Utilities
-Plug 'ward/VimCompletesMe'       " Simple autocompletion
+Plug 'neoclide/coc.nvim', {'branch': 'release'} " LSP/Intellisense engine
 
 call plug#end()
 
@@ -138,10 +137,15 @@ if executable('rg')
   let g:fzf_grep_command = 'rg --column --line-number --no-heading --color=always --smart-case '
 endif
 
+" --- Lightline ---
+" Set a colorscheme for the status bar that matches the main theme.
+let g:lightline = { 'colorscheme': 'gruvbox' }
+
+
 " --- ALE (Asynchronous Lint Engine) ---
 " For Python, we use 'ruff' for linting/fixing and 'mypy' for type checking.
 " Assumes 'ruff' and 'mypy' are installed in your environment (e.g., via 'uv pip install ruff mypy').
-let g:ale_linters = {'python': ['ruff', 'mypy'], '*': ['remove_trailing_lines', 'trim_whitespace']}
+let g:ale_linters = {'python': [], '*': ['remove_trailing_lines', 'trim_whitespace']} " coc-pyright will handle type-checking
 let g:ale_fixers = {'python': ['ruff'], '*': ['remove_trailing_lines', 'trim_whitespace']}
 
 let g:ale_fix_on_save = 1
@@ -149,15 +153,64 @@ let g:ale_completion_enabled = 1
 let g:ale_completion_autoimport = 1
 let g:ale_sign_warning = '-!'
 set completeopt=menu,menuone,preview,noselect,noinsert " Options for omni-completion
-set omnifunc=ale#completion#OmniFunc
 
 " Python-specific ALE settings
 " Rely on project-level configuration (pyproject.toml) for ruff.
-" For mypy, we can still pass command-line options.
-let g:ale_python_mypy_options = '--strict'
-
 " ALE will automatically detect and use virtual environments (like .venv created by uv).
 let g:ale_python_auto_detect_virtualenv = 1
+
+" --- coc.nvim (LSP and Autocompletion) ---
+" Recommended settings for a smoother experience.
+set hidden
+set updatetime=300
+set signcolumn=yes
+
+" Use tab for trigger completion with characters and navigate.
+inoremap <silent><expr> <TAB>
+      \ pumvisible() ? "\<C-n>" :
+      \ <SID>check_back_space() ? "\<TAB>" :
+      \ coc#refresh()
+inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
+
+function! s:check_back_space() abort
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
+endfunction
+
+" Use <cr> to confirm completion.
+inoremap <expr> <cr> pumvisible() ? coc#_select_confirm() : "\<C-g>u\<CR>"
+
+" Key Mappings for CoC navigation and actions
+" Use <leader> prefix for CoC commands.
+nmap <silent> [g <Plug>(coc-diagnostic-prev)
+nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+nmap <silent> <leader>gd <Plug>(coc-definition)
+nmap <silent> <leader>gy <Plug>(coc-type-definition)
+nmap <silent> <leader>gi <Plug>(coc-implementation)
+nmap <silent> <leader>gr <Plug>(coc-references)
+
+" Use K to show documentation in preview window.
+nnoremap <silent> K :call <SID>show_documentation()<CR>
+
+function! s:show_documentation()
+  if (index(['vim','help'], &filetype) >= 0)
+    execute 'h '.expand('<cword>')
+  else
+    call CocAction('doHover')
+  endif
+endfunction
+
+" Highlight the symbol and its references when holding the cursor.
+autocmd CursorHold * if exists('*CocActionAsync') | silent call CocActionAsync('highlight') | endif
+
+" Remap for rename
+nmap <leader>rn <Plug>(coc-rename)
+
+" Example for formatting selected code
+xmap <leader>f  <Plug>(coc-format-selected)
+nmap <leader>f  <Plug>(coc-format-selected)
+
 
 " --- jedi-vim ---
 " (Using default settings, integrates with ALE)
@@ -169,9 +222,8 @@ let mapleader=","
 
 " --- Toggles & System ---
 nnoremap <silent> <F2> :set paste!<CR>          " Toggle paste mode
-nnoremap <silent> <F3> :call CleanExtraSpaces()<CR> " Remove trailing whitespace
 nnoremap <silent> <F5> :UndotreeToggle<CR>       " Toggle Undotree
-nmap <leader>vm :e ~/.vimrc<CR>                  " Edit this vimrc
+nmap <leader>vm :e ~/_vimrc<CR>                  " Edit this vimrc
 nnoremap <silent> <C-q> :q<CR>                   " Close current window
 nmap <leader>w :w<CR>                           " Quick save
 nmap <leader>cd :lcd %:p:h<CR>
@@ -185,7 +237,7 @@ nnoremap <silent> <PageDown> <C-D>zz
 vnoremap <silent> <PageDown> <C-D>zz
 inoremap <silent> <PageDown> <C-O><C-D><C-O>zz
 
-nmap <leader>e :NERDTreeToggle<CR>              " Toggle NERDTree file explorer
+nmap <leader>e :E<CR>                           " Open netrw file explorer
 
 " Buffer navigation
 nmap <leader>d :bprevious<CR>:bdelete #<CR>     " Close current buffer
@@ -272,18 +324,8 @@ augroup ProjectConfig
     autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
     " Auto-read files changed from outside
     autocmd FocusGained,BufEnter * checktime
-    " Auto-trim trailing whitespace on save
-    autocmd BufWritePre *.txt,*.js,*.py,*.wiki,*.sh,*.bat,*.coffee,*.feature,*.c,*.cpp,*.h,*.hpp,*.go :call CleanExtraSpaces()
+    " ALE's 'trim_whitespace' fixer handles this on save now.
 augroup END
-
-" --- Clean trailing whitespace ---
-function! CleanExtraSpaces()
-    let save_cursor = getpos(".")
-    let old_query = getreg('/')
-    silent! %s/\s\+$//e
-    call setpos('.', save_cursor)
-    call setreg('/', old_query)
-endfun
 
 " --- Visual selection search ---
 " Function to search for the current visual selection
@@ -292,9 +334,7 @@ function! VisualSelection(direction, extra_filter) range
     execute "normal! vgvy"
     let l:pattern = escape(@", "\\/.*'$^~[]")
     let l:pattern = substitute(l:pattern, "\n$", "", "")
-    if a:direction == 'gv'
-        call CmdLine("Ack '" . l:pattern . "' " )
-    elseif a:direction == 'replace'
+    if a:direction == 'replace'
         call CmdLine("%s" . '/'. l:pattern . '/')
     endif
     let @/ = l:pattern
