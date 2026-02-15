@@ -1,0 +1,339 @@
+" ============================================================================
+"  Preamble
+" ============================================================================
+set nocompatible
+filetype plugin indent on
+syntax on
+
+" ============================================================================
+"  General Settings
+" ============================================================================
+" --- Behavior ---
+set hidden              " Opening a new file hides the current one instead of closing it.
+set history=10000       " Command-line history size.
+set undolevels=10000    " Undo history size.
+set autoread            " Automatically reload files changed outside of Vim.
+set ttyfast             " Faster redrawing.
+set lazyredraw          " Don't redraw while executing macros.
+set termguicolors       " Enable true color support for gVim.
+set novisualbell        " No visual bell.
+set noerrorbells        " No audio bell.
+set laststatus=2        " Always show the status line.
+set backupcopy=yes      " Always copy for backup, safer on Windows.
+
+" --- Text Formatting & Indentation ---
+set nowrap              " Do not wrap lines.
+set tabstop=4           " Tabs are 4 characters wide.
+set shiftwidth=4        " Indentation width is 4 characters.
+set expandtab           " Use spaces instead of hard tabs.
+set softtabstop=4       " Soft tab width.
+set autoindent          " Enable basic auto-indentation.
+set copyindent          " Preserve manual indentation.
+set shiftround          " Round indentation to the nearest 'shiftwidth'.
+set backspace=indent,eol,start " Allow backspace over everything in insert mode.
+
+" --- Searching ---
+set ignorecase          " Ignore case when searching.
+set smartcase           " Override 'ignorecase' if the search pattern has uppercase letters.
+set smarttab            " Use 'shiftwidth' for tabs at the beginning of a line.
+set hlsearch            " Highlight all search matches.
+set incsearch           " Show search matches incrementally.
+
+" Use ripgrep for :grep command
+if executable('rg')
+    set grepprg=rg\ --vimgrep\ --no-heading\ --smart-case
+    set grepformat=%f:%l:%c:%m
+endif
+
+" --- UI & Display ---
+set number              " Show line numbers.
+set ruler               " Show cursor position in the status line.
+set showmatch           " Show matching brackets.
+set title               " Set the window title to the file name.
+set background=dark     " Use a dark background color scheme.
+set encoding=utf-8      " Set file encoding to UTF-8.
+set wildmenu            " Enable visual wildmenu for command completion.
+
+set wildignore=*.swp,*.bak,*.pyc,*.class,*.o " Files to ignore for wildmenu.
+
+" --- Cursor Shape in Different Modes (for compatible terminals) ---
+let &t_SI.="\e[5 q" " Insert mode: blinking bar
+let &t_SR.="\e[4 q" " Replace mode: solid underscore
+let &t_EI.="\e[1 q" " Normal mode: solid block
+
+" --- Cursor Shape in gVim ---
+if has('gui_running')
+  " Use block for Normal, vertical bar for Insert, and underscore for Replace.
+  set guicursor=n-v-c:block,i-ci:ver25,r-cr:hor20
+endif
+
+" ============================================================================
+"  File and Backup Management
+" ============================================================================
+" Keep Vim's temporary files out of the working directory.
+set undodir=~/.vim/.undo//
+set backupdir=~/.vim/.backup//
+set directory=~/.vim/.swp//
+set swapfile backup undofile
+
+" ============================================================================
+"  Plugins (vim-plug)
+" ============================================================================
+call plug#begin('~/vimfiles/plugged')
+
+" Core
+Plug 'vim-airline/vim-airline'   " Status bar
+Plug 'morhetz/gruvbox'           " Color scheme
+
+" File & History
+Plug 'preservim/nerdtree'        " File explorer
+Plug 'junegunn/fzf.vim'          " Fuzzy finder integration
+Plug 'junegunn/fzf',  { 'dir': '~/.fzf' } " Fuzzy finder core
+Plug 'mbbill/undotree'           " Visualize undo history
+
+" Development & Git
+Plug 'tpope/vim-fugitive'        " Git wrapper
+Plug 'dense-analysis/ale'        " Asynchronous linter and fixer
+Plug 'Propaz/karate-linter'
+
+" Utilities
+Plug 'ward/VimCompletesMe'       " Simple autocompletion
+
+call plug#end()
+
+" ============================================================================
+"  Appearance
+" ============================================================================
+colorscheme gruvbox
+set guifont=Consolas:h14:cANSI
+
+" Improve font rendering in gVim on Windows
+if has('win32')
+  set renderoptions=type:directx
+endif
+
+" ============================================================================
+"  Plugin Configuration
+" ============================================================================
+" --- netrw / NERDTree ---
+" These settings configure netrw, which is Vim's built-in file explorer.
+let g:netrw_banner=0    " Hide the banner in netrw
+let g:netrw_liststyle=3 " Use tree style listing in netrw
+
+" --- FZF ---
+" Explicitly set fzf window layout to a bottom split to avoid rendering issues in gVim.
+let g:fzf_layout = { 'down': '~40%' }
+" Disable using fzf history for initial query pre-filling.
+let g:fzf_history_file = ''
+
+" Configure fzf to use fd and rg for faster searching
+if executable('fd')
+  " Use fd for file listing. This command is used by :Files and :FZF (default).
+  let $FZF_DEFAULT_COMMAND = 'fd --type f --hidden --follow --exclude .git'
+  let g:fzf_files_command = 'fd --type f --hidden --follow --exclude .git'
+endif
+
+if executable('rg')
+  " Configure fzf's grep command to use ripgrep.
+  let g:fzf_grep_command = 'rg --column --line-number --no-heading --color=always --smart-case '
+endif
+
+" --- ALE (Asynchronous Lint Engine) ---
+" For Python, we use 'ruff' for linting/fixing and 'mypy' for type checking.
+" Assumes 'ruff' and 'mypy' are installed in your environment (e.g., via 'uv pip install ruff mypy').
+let g:ale_linters = {'python': ['ruff', 'mypy'], '*': ['remove_trailing_lines', 'trim_whitespace']}
+let g:ale_fixers = {'python': ['ruff'], '*': ['remove_trailing_lines', 'trim_whitespace']}
+
+let g:ale_fix_on_save = 1
+let g:ale_completion_enabled = 1
+let g:ale_completion_autoimport = 1
+let g:ale_sign_warning = '-!'
+set completeopt=menu,menuone,preview,noselect,noinsert " Options for omni-completion
+set omnifunc=ale#completion#OmniFunc
+
+" Python-specific ALE settings
+" Rely on project-level configuration (pyproject.toml) for ruff.
+" For mypy, we can still pass command-line options.
+let g:ale_python_mypy_options = '--strict'
+
+" ALE will automatically detect and use virtual environments (like .venv created by uv).
+let g:ale_python_auto_detect_virtualenv = 1
+
+" --- jedi-vim ---
+" (Using default settings, integrates with ALE)
+
+" ============================================================================
+"  Key Mappings
+" ============================================================================
+let mapleader=","
+
+" --- Toggles & System ---
+nnoremap <silent> <F2> :set paste!<CR>          " Toggle paste mode
+nnoremap <silent> <F3> :call CleanExtraSpaces()<CR> " Remove trailing whitespace
+nnoremap <silent> <F5> :UndotreeToggle<CR>       " Toggle Undotree
+nmap <leader>vm :e ~/.vimrc<CR>                  " Edit this vimrc
+nnoremap <silent> <C-q> :q<CR>                   " Close current window
+nmap <leader>w :w<CR>                           " Quick save
+nmap <leader>cd :lcd %:p:h<CR>
+
+" --- Navigation & Buffers ---
+" Center screen on page up/down
+nnoremap <silent> <PageUp>   <C-U>zz
+vnoremap <silent> <PageUp>   <C-U>zz
+inoremap <silent> <PageUp>   <C-O><C-U><C-O>zz
+nnoremap <silent> <PageDown> <C-D>zz
+vnoremap <silent> <PageDown> <C-D>zz
+inoremap <silent> <PageDown> <C-O><C-D><C-O>zz
+
+nmap <leader>e :NERDTreeToggle<CR>              " Toggle NERDTree file explorer
+
+" Buffer navigation
+nmap <leader>d :bprevious<CR>:bdelete #<CR>     " Close current buffer
+nmap <leader>n :bn<CR>                          " Next buffer
+nmap <leader>p :bp<CR>                          " Previous buffer
+nmap <leader>b :buffer <Tab>                    " Switch buffer by name
+
+" Tab navigation
+nnoremap <C-t>     :tabnew<CR>
+inoremap <C-t>     <Esc>:tabnew<CR>
+nnoremap <leader>1 1gt
+nnoremap <leader>2 2gt
+nnoremap <leader>3 3gt
+nnoremap <leader>4 4gt
+nnoremap <leader>5 5gt
+nnoremap <leader>6 6gt
+nnoremap <leader>7 7gt
+
+" --- Editing & Text Manipulation ---
+nmap <leader>a ggVG                              " Select all
+nmap <silent> <leader><CR> o<ESC>                " Insert empty line below
+nmap <silent> <leader><space> :noh<CR>           " Clear search highlights
+
+" Move lines up/down
+nnoremap <leader>j :m .+1<CR>==
+nnoremap <leader>k :m .-2<CR>==
+inoremap <leader>j <Esc>:m .+1<CR>==gi
+inoremap <leader>k <Esc>:m .-2<CR>==gi
+vnoremap <leader>j :m '>+1<CR>gv=gv
+vnoremap <leader>k :m '<-2<CR>gv=gv
+
+" --- Plugin-specific Mappings ---
+" fzf
+nnoremap <silent> <Leader>b :Buffers<CR>
+nnoremap <silent> <C-f>     :Files <CR>
+nnoremap <silent> <Leader>f :Rg<CR>
+nnoremap <silent> <Leader>/ :BLines<CR>
+nnoremap <silent> <Leader>hh :History<CR>
+nnoremap <silent> <Leader>ag :Rg <C-R><C-W><CR>
+nnoremap <silent> <Leader>rg :Rg <C-R><C-W><CR>
+nnoremap <silent> <leader>ff :FZF -q <C-R>=expand("<cword>")<CR><CR>
+imap <C-x><C-f> <C-o>:call fzf#vim#complete('cd ' . shellescape(FindProjectRoot()) . ' && ' . $FZF_DEFAULT_COMMAND)<CR>
+imap <C-x><C-l> <plug>(fzf-complete-line)
+
+" vim-fugitive (Git)
+nnoremap <silent> <Leader>gl :Gclog -10 -- %<CR> " Git: Show log for current file
+nnoremap <silent> <Leader>gb :Git blame<CR>      " Git: Blame
+nnoremap <silent> <Leader>gd :Ghdiffsplit<CR>   " Git: Diff with HEAD
+
+" ALE
+map <F12> <Plug>(ale_next_wrap)
+map <F11> <Plug>(ale_previous_wrap)
+
+" JSON formatting with jq (requires 'jq.exe' in your %PATH%)
+nnoremap <silent> <Leader>fj <Cmd>%!jq<CR>
+nnoremap <silent> <Leader>fcj <Cmd>%!jq --compact-output<CR>
+vnoremap <silent> <Leader>fj :'<,'>!jq<CR>
+vnoremap <silent> <Leader>fcj :'<,'>!jq --compact-output<CR>
+
+" Search for visual selection
+vnoremap <silent> * :<C-u>call VisualSelection('', '')<CR>/<C-R>=@/<CR><CR>
+vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
+
+" ============================================================================
+"  Autocommands and Functions
+" ============================================================================
+" --- Find project root (git) or current file's directory ---
+function! FindProjectRoot()
+    let git_root = finddir('.git', '.;')
+    if !empty(git_root)
+        " finddir returns 'path/.git/', we want 'path/'
+        return fnamemodify(git_root, ':h')
+    else
+        " Fallback to the directory of the current file if no .git dir is found
+        return expand('%:p:h')
+    endif
+endfunction
+
+augroup ProjectConfig
+    autocmd!
+    " Python specific settings
+    autocmd BufNewFile,BufRead *.py setlocal expandtab autoindent tabstop=4 softtabstop=4 shiftwidth=4
+    " Return to last edit position when opening files
+    autocmd BufReadPost * if line("'\"") > 1 && line("'\"") <= line("$") | exe "normal! g'\"" | endif
+    " Auto-read files changed from outside
+    autocmd FocusGained,BufEnter * checktime
+    " Auto-trim trailing whitespace on save
+    autocmd BufWritePre *.txt,*.js,*.py,*.wiki,*.sh,*.bat,*.coffee,*.feature,*.c,*.cpp,*.h,*.hpp,*.go :call CleanExtraSpaces()
+augroup END
+
+" --- Clean trailing whitespace ---
+function! CleanExtraSpaces()
+    let save_cursor = getpos(".")
+    let old_query = getreg('/')
+    silent! %s/\s\+$//e
+    call setpos('.', save_cursor)
+    call setreg('/', old_query)
+endfun
+
+" --- Visual selection search ---
+" Function to search for the current visual selection
+function! VisualSelection(direction, extra_filter) range
+    let l:saved_reg = @"
+    execute "normal! vgvy"
+    let l:pattern = escape(@", "\\/.*'$^~[]")
+    let l:pattern = substitute(l:pattern, "\n$", "", "")
+    if a:direction == 'gv'
+        call CmdLine("Ack '" . l:pattern . "' " )
+    elseif a:direction == 'replace'
+        call CmdLine("%s" . '/'. l:pattern . '/')
+    endif
+    let @/ = l:pattern
+    let @" = l:saved_reg
+endfunction
+
+" --- Large File Handling ---
+let g:LargeFile = 10 * 1024 * 1024 " 10 MB
+augroup LargeFile
+  au!
+  autocmd BufReadPre * let f=getfsize(expand("<afile>")) | if f > g:LargeFile || f == -2 | call LargeFile() | endif
+augroup END
+
+function! LargeFile()
+  " Disable performance-intensive features for large files
+  set eventignore+=FileType
+  setlocal bufhidden=unload
+  setlocal buftype=nowrite
+  setlocal undolevels=-1
+  setlocal syntax=0
+  setlocal ft=0 syn=0
+  set nohlsearch
+  set nonumber
+  filetype off
+  filetype plugin indent off
+  autocmd VimEnter * echo "Large file mode: some features disabled for performance."
+endfunction
+
+" ============================================================================
+"  Platform-Specific
+" ============================================================================
+if has('unix')
+  " Sudo save for Unix-like systems
+  command! W execute 'w !sudo tee % > /dev/null' <bar> edit!
+endif
+
+if has('win32')
+    " These are often defaults but are set explicitly for clarity.
+    set shell=cmd.exe
+    set shellpipe=|
+    set shellredir=>
+endif
