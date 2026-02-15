@@ -119,7 +119,7 @@ endif
 " --- netrw / NERDTree ---
 " These settings configure netrw, which is Vim's built-in file explorer.
 let g:netrw_banner=0    " Hide the banner in netrw
-let g:netrw_liststyle=3 " Use tree style listing in netrw
+let g:netrw_liststyle=1 " Use tree style listing in netrw
 
 " --- FZF ---
 " Explicitly set fzf window layout to a bottom split to avoid rendering issues in gVim.
@@ -237,7 +237,7 @@ nnoremap <silent> <PageDown> <C-D>zz
 vnoremap <silent> <PageDown> <C-D>zz
 inoremap <silent> <PageDown> <C-O><C-D><C-O>zz
 
-nmap <leader>e :E<CR>                           " Open netrw file explorer
+nmap <leader>e :Lexplore<CR>                           " Open netrw file explorer
 
 " Buffer navigation
 nmap <leader>d :bprevious<CR>:bdelete #<CR>     " Close current buffer
