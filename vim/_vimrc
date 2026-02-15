@@ -257,6 +257,7 @@ nnoremap <leader>7 7gt
 nmap <leader>a ggVG                              " Select all
 nmap <silent> <leader><CR> o<ESC>                " Insert empty line below
 nmap <silent> <leader><space> :noh<CR>           " Clear search highlights
+nnoremap <silent> <leader>fcr :%s/\r//g<CR>:nohlsearch<CR> " Fix DOS line endings (^M)
 
 " Move lines up/down
 nnoremap <leader>j :m .+1<CR>==
