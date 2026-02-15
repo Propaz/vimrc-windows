@@ -212,9 +212,6 @@ xmap <leader>f  <Plug>(coc-format-selected)
 nmap <leader>f  <Plug>(coc-format-selected)
 
 
-" --- jedi-vim ---
-" (Using default settings, integrates with ALE)
-
 " ============================================================================
 "  Key Mappings
 " ============================================================================
