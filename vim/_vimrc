@@ -59,9 +59,6 @@ set wildmenu            " Enable visual wildmenu for command completion.
 
 set wildignore=*.swp,*.bak,*.pyc,*.class,*.o " Files to ignore for wildmenu.
 
-" --- Cursor Shape in Different Modes (for compatible terminals) ---
-
-
 " --- gVim: Cursor Shape & Rendering ---
 if has('gui_running')
   " Use block for Normal, vertical bar for Insert, and underscore for Replace.
@@ -139,21 +136,6 @@ if executable('bat')
     let g:fzf_preview_window = ['right:50%:wrap', 'ctrl-/']
 endif
 
-" Configure fzf to use modern tools like fd, rg, and ag.
-
-" Use fd for file listing (:Files).
-if executable('fd')
-  " Use fd for file listing. This command is used by :Files and :FZF (default).
-
-endif
-
-" Use rg for searching in files (:Rg).
-if executable('rg')
-  " fzf.vim's built-in :Rg command is great and includes preview support.
-  " To make the generic :Grep command also use rg, this is set:
-
-endif
-
 " Use ag for searching in files (:Ag), since it's installed.
 if executable('ag')
   " Add options for :Ag command. The --hidden flag is added to search in hidden files.
@@ -163,7 +145,6 @@ endif
 " --- Lightline ---
 " Set a colorscheme for the status bar that matches the main theme.
 let g:lightline = { 'colorscheme': 'gruvbox' }
-
 
 " --- ALE (Asynchronous Lint Engine) ---
 " For Python, we use 'ruff' for linting/fixing and 'mypy' for type checking.
