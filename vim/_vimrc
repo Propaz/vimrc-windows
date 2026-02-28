@@ -159,7 +159,7 @@ let g:ale_fixers = {'python': ['ruff'], '*': ['remove_trailing_lines', 'trim_whi
 let g:ale_fix_on_save = 1
 let g:ale_completion_enabled = 1
 let g:ale_completion_autoimport = 1
-let g:ale_sign_warning = '-!'
+let g:ale_sign_warning = 'W>'
 set completeopt=menu,menuone,preview,noselect,noinsert " Options for omni-completion
 
 " Python-specific ALE settings
