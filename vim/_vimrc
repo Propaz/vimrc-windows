@@ -124,7 +124,7 @@ set guifont=Consolas:h14:cANSI
 " --- netrw / NERDTree ---
 " These settings configure netrw, which is Vim's built-in file explorer.
 let g:netrw_banner = 0          " Hide the banner in netrw
-let g:netrw_liststyle = 0       " Use tree style listing in netrw
+let g:netrw_liststyle = 0
 let g:netrw_browse_split = 4    " Open files in the previous window (acting like a sidebar)
 let g:netrw_winsize = 25
 
