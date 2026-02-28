@@ -97,6 +97,8 @@ Plug 'mbbill/undotree'           " Visualize undo history
 
 " Development & Git
 Plug 'tpope/vim-fugitive', { 'on': ['G', 'Git'] } " Git wrapper
+Plug 'tpope/vim-commentary'
+Plug 'tpope/vim-surround'
 
 " --- Fugitive (Git) ---
 " Используем 'delta' для красивых дифов в :Gdiffsplit, :Gclog, и т.д.
@@ -121,8 +123,10 @@ set guifont=Consolas:h14:cANSI
 " ============================================================================
 " --- netrw / NERDTree ---
 " These settings configure netrw, which is Vim's built-in file explorer.
-let g:netrw_banner=0    " Hide the banner in netrw
-let g:netrw_liststyle=1 " Use tree style listing in netrw
+let g:netrw_banner = 0          " Hide the banner in netrw
+let g:netrw_liststyle = 0       " Use tree style listing in netrw
+let g:netrw_browse_split = 4    " Open files in the previous window (acting like a sidebar)
+let g:netrw_winsize = 25
 
 " --- FZF ---
 " Explicitly set fzf window layout to a bottom split to avoid rendering issues in gVim.
@@ -163,11 +167,6 @@ set completeopt=menu,menuone,preview,noselect,noinsert " Options for omni-comple
 " ALE will automatically detect and use virtual environments (like .venv created by uv).
 let g:ale_python_auto_detect_virtualenv = 1
 
-function! s:check_back_space() abort
-  let col = col('.') - 1
-  return !col || getline('.')[col - 1]  =~# '\s'
-endfunction
-
 " ============================================================================
 "  Key Mappings
 " ============================================================================
@@ -191,7 +190,7 @@ nnoremap <silent> <PageDown> <C-D>zz
 vnoremap <silent> <PageDown> <C-D>zz
 inoremap <silent> <PageDown> <C-O><C-D><C-O>zz
 
-nnoremap <leader>e :Lexplore %:p:h<CR>                           " Open netrw file explorer
+nnoremap <leader>e :Vexplore %:p:h<CR>                           " Open netrw file explorer
 
 " Buffer navigation
 nnoremap <leader>d :bprevious<CR>:bdelete #<CR>     " Close current buffer
