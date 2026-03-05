@@ -278,6 +278,18 @@ vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
 " ============================================================================
 "  Autocommands and Functions
 " ============================================================================
+" --- Find project root (git) or current file's directory ---
+function! FindProjectRoot()
+    let git_root = finddir('.git', '.;')
+    if !empty(git_root)
+        " finddir returns 'path/.git/', we want 'path/'
+        return fnamemodify(git_root, ':h')
+    else
+        " Fallback to the directory of the current file if no .git dir is found
+        return expand('%:p:h')
+    endif
+endfunction
+
 augroup ProjectConfig
     autocmd!
     " Python specific settings
