@@ -99,6 +99,7 @@ Plug 'mbbill/undotree'           " Visualize undo history
 Plug 'tpope/vim-fugitive', { 'on': ['G', 'Git'] } " Git wrapper
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
+Plug 'preservim/nerdtree'         " File explorer
 
 " --- Fugitive (Git) ---
 " Используем 'delta' для красивых дифов в :Gdiffsplit, :Gclog, и т.д.
@@ -121,12 +122,22 @@ set guifont=Consolas:h14:cANSI
 " ============================================================================
 "  Plugin Configuration
 " ============================================================================
-" --- netrw / NERDTree ---
-" These settings configure netrw, which is Vim's built-in file explorer.
-let g:netrw_banner = 0          " Hide the banner in netrw
-let g:netrw_liststyle = 0
-let g:netrw_browse_split = 4    " Open files in the previous window (acting like a sidebar)
-let g:netrw_winsize = 25
+" --- NERDTree ---
+" Disable the built-in netrw to prevent conflicts.
+let g:loaded_netrw = 1
+let g:loaded_netrwPlugin = 1
+
+" --- NERDTree optimal settings for maximum responsiveness ---
+let g:NERDTreeMinimalUI = 1           " Enable minimal UI for faster rendering.
+let g:NERDTreeHijackNetrw = 1         " Make NERDTree the default for opening directories.
+let g:NERDTreeShowHidden = 1          " Show hidden files.
+let g:NERDTreeAutoClose = 1           " Close NERDTree when a file is opened from it.
+
+" Ignore common clutter and large directories to speed up scanning.
+let g:NERDTreeIgnore = [
+    \ '\.pyc$', '\.swp$', '\.git$', '\.hg$', '\.svn$', '\.DS_Store$',
+    \ '__pycache__', 'node_modules'
+    \ ]
 
 " --- FZF ---
 " Explicitly set fzf window layout to a bottom split to avoid rendering issues in gVim.
@@ -190,7 +201,7 @@ nnoremap <silent> <PageDown> <C-D>zz
 vnoremap <silent> <PageDown> <C-D>zz
 inoremap <silent> <PageDown> <C-O><C-D><C-O>zz
 
-nnoremap <leader>e :Vexplore %:p:h<CR>                           " Open netrw file explorer
+nnoremap <leader>e :NERDTreeToggle<CR>                           " Toggle NERDTree file explorer
 
 " Buffer navigation
 nnoremap <leader>d :bprevious<CR>:bdelete #<CR>     " Close current buffer
@@ -267,18 +278,6 @@ vnoremap <silent> # :<C-u>call VisualSelection('', '')<CR>?<C-R>=@/<CR><CR>
 " ============================================================================
 "  Autocommands and Functions
 " ============================================================================
-" --- Find project root (git) or current file's directory ---
-function! FindProjectRoot()
-    let git_root = finddir('.git', '.;')
-    if !empty(git_root)
-        " finddir returns 'path/.git/', we want 'path/'
-        return fnamemodify(git_root, ':h')
-    else
-        " Fallback to the directory of the current file if no .git dir is found
-        return expand('%:p:h')
-    endif
-endfunction
-
 augroup ProjectConfig
     autocmd!
     " Python specific settings
