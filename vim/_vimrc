@@ -241,7 +241,7 @@ nnoremap <silent> <leader>ff :FZF -q <C-R>=expand("<cword>")<CR><CR>
 if executable('ag')
     nnoremap <silent> <Leader>ag :Ag <C-R><C-W><CR>
 endif
-imap <C-x><C-f> <C-o>:call fzf#vim#complete('cd ' . shellescape(FindProjectRoot()) . ' && ' . $FZF_DEFAULT_COMMAND)<CR>
+imap <C-x><C-f> <C-o>:call fzf#vim#complete('cd ' . shellescape(FindProjectRoot()) . ' && rg --files --hidden')<CR>
 imap <C-x><C-l> <plug>(fzf-complete-line)
 
 " vim-fugitive (Git)
