@@ -194,6 +194,10 @@ nnoremap <silent> <leader>nr :set relativenumber!<CR> " Toggle relative numberin
 nnoremap <leader>vm :e ~/_vimrc<CR>                  " Edit this vimrc
 nnoremap <silent> <C-q> :q<CR>                   " Close current window
 nnoremap <leader>w :w<CR>                           " Quick save
+" --- Clipboard Operations ---
+nnoremap <leader>cf :let @+=expand('%:t')<CR>          " Copy filename to clipboard
+nnoremap <leader>cfp :let @+=expand('%:p')<CR>         " Copy full path to clipboard
+
 nnoremap <leader>cd :lcd %:p:h<CR>
 
 " --- Navigation & Buffers ---
