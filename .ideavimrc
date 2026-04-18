@@ -1,0 +1,76 @@
+" --- Generic settings ---
+set autoindent
+set copyindent
+set shiftround
+set showmatch
+set hlsearch
+set incsearch
+set ruler
+set novisualbell
+set noerrorbells
+set lazyredraw
+set cursorline
+set ideajoin
+
+" Use case-insensitive search, but switch to case-sensitive if an uppercase letter is used
+set ignorecase
+set smartcase
+
+" --- Leader Key ---
+" Sets the leader key to comma.
+let mapleader=","
+
+" --- IDE Integration ---
+" Use IDE actions for better integration and feature access.
+" NOTE: Using 'map' here as 'nnoremap' can cause issues with <Action> mappings in some IdeaVim versions.
+map <leader>rd <Action>(Debug)
+map <leader>rr <Action>(Run)
+map <leader>ss <Action>(Stop)
+map <leader>ff <Action>(FindInPath)
+map <leader>hh <Action>(RecentFiles)
+map <leader>hc <Action>(RecentChanges)
+
+map <leader>n <Action>(NextTab)
+map <leader>p <Action>(PreviousTab)
+map <leader>b :ls<CR>:b<Space>
+map <leader>d <Action>(CloseEditor)
+
+nnoremap <leader>1 1gt
+nnoremap <leader>2 2gt
+nnoremap <leader>3 3gt
+nnoremap <leader>4 4gt
+nnoremap <leader>5 5gt
+nnoremap <leader>6 6gt
+nnoremap <leader>7 7gt
+
+
+" --- Editing ---
+" Quick save (useful even with auto-save to trigger file watchers, etc.)
+nnoremap <leader>w :w<CR>
+
+" Select all
+nnoremap <leader>a ggVG
+
+" Insert empty line below
+nnoremap <silent> <leader><CR> o<ESC>
+
+" Clear search highlights
+nnoremap <silent> <leader><space> :noh<CR>
+
+" Move lines up/down in normal, insert, and visual modes
+nnoremap <leader>j :m .+1<CR>==
+nnoremap <leader>k :m .-2<CR>==
+inoremap <leader>j <Esc>:m .+1<CR>==gi
+inoremap <leader>k <Esc>:m .-2<CR>==gi
+vnoremap <leader>j :m '>+1<CR>gv=gv
+vnoremap <leader>k :m '<-2<CR>gv=gv
+
+" --- Visual Mode ---
+" Search for the visually selected text forwards
+vnoremap <silent> * y/<C-R>"<CR>
+" Search for the visually selected text backwards
+vnoremap <silent> # y?<C-R>"<CR>
+
+" Replace visually selected text across the whole file.
+" Yanks the selection and prepares a substitution command, waiting for your input.
+vnoremap <silent> <leader>r y:%s/<C-R>""/g<Left><Left>
