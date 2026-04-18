@@ -11,6 +11,7 @@ set noerrorbells
 set lazyredraw
 set cursorline
 set ideajoin
+set clipboard=unnamed,unnamedplus " Use system clipboard for yank/paste
 
 " Use case-insensitive search, but switch to case-sensitive if an uppercase letter is used
 set ignorecase
@@ -20,21 +21,42 @@ set smartcase
 " Sets the leader key to comma.
 let mapleader=","
 
-" --- IDE Integration ---
-" Use IDE actions for better integration and feature access.
-" NOTE: Using 'map' here as 'nnoremap' can cause issues with <Action> mappings in some IdeaVim versions.
+" --- Best Practice: Use non-recursive mappings ---
+" For standard Vim commands, `noremap` variants (`nnoremap`, `vnoremap`) are best practice.
+" HOWEVER, for IDE-specific commands using `<Action>`, `map` is required to ensure they work correctly.
+" Therefore, we use `map` for <Action> mappings and `nnoremap`/`vnoremap` for everything else.
+
+" --- IDE Integration & Code Navigation ---
+" Debug current file/project
 map <leader>rd <Action>(Debug)
+" Run current file/project
 map <leader>rr <Action>(Run)
+" Stop current run/debug session
 map <leader>ss <Action>(Stop)
+" Find in Files (whole project)
 map <leader>ff <Action>(FindInPath)
+" Find Usages of the symbol under the cursor
+map <leader>fu <Action>(FindUsages)
+" Open File Structure (outline)
+map <leader>fs <Action>(FileStructurePopup)
+" Go to Declaration
+map <leader>gd <Action>(GotoDeclaration)
+
+" --- File & Buffer Management ---
+" Recently opened files
 map <leader>hh <Action>(RecentFiles)
+" Recent changes
 map <leader>hc <Action>(RecentChanges)
-
+" Next editor tab
 map <leader>n <Action>(NextTab)
+" Previous editor tab
 map <leader>p <Action>(PreviousTab)
-map <leader>b :ls<CR>:b<Space>
+" Close current editor tab
 map <leader>d <Action>(CloseEditor)
+" Use the IDE's powerful switcher for buffers, files, and symbols instead of `:b`
+map <leader>b <Action>(Switcher)
 
+" Jump to specific tabs (1-9), and last tab ($)
 nnoremap <leader>1 1gt
 nnoremap <leader>2 2gt
 nnoremap <leader>3 3gt
@@ -42,17 +64,36 @@ nnoremap <leader>4 4gt
 nnoremap <leader>5 5gt
 nnoremap <leader>6 6gt
 nnoremap <leader>7 7gt
+nnoremap <leader>8 8gt
+nnoremap <leader>9 9gt
+nnoremap <leader>$ 99gt
+
+" --- Window Management ---
+" Split window vertically
+nnoremap <leader>wv :vsp<CR>
+" Split window horizontally
+nnoremap <leader>ws :sp<CR>
+" Navigate between splits using Ctrl + movement keys
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
 
 
 " --- Editing ---
 " Quick save (useful even with auto-save to trigger file watchers, etc.)
 nnoremap <leader>w :w<CR>
 
+" Commenting code using the IDE's action
+map <leader>/ <Action>(CommentByLineComment)
+vmap <leader>/ <Action>(CommentByLineComment)
+
 " Select all
 nnoremap <leader>a ggVG
 
-" Insert empty line below
-nnoremap <silent> <leader><CR> o<ESC>
+" Insert empty line below/above while staying in normal mode on the same line
+nnoremap <leader>o o<Esc>k
+nnoremap <leader>O O<Esc>j
 
 " Clear search highlights
 nnoremap <silent> <leader><space> :noh<CR>
@@ -66,11 +107,18 @@ vnoremap <leader>j :m '>+1<CR>gv=gv
 vnoremap <leader>k :m '<-2<CR>gv=gv
 
 " --- Visual Mode ---
-" Search for the visually selected text forwards
+" Search for the visually selected text forwards/backwards
 vnoremap <silent> * y/<C-R>"<CR>
-" Search for the visually selected text backwards
 vnoremap <silent> # y?<C-R>"<CR>
 
 " Replace visually selected text across the whole file.
 " Yanks the selection and prepares a substitution command, waiting for your input.
 vnoremap <silent> <leader>r y:%s/<C-R>""/g<Left><Left>
+
+" --- Version Control ---
+" Git Annotate (Blame)
+map <leader>ga <Action>(Annotate)
+" Git Pull
+map <leader>gp <Action>(Git.Pull)
+" Git Push
+map <leader>gP <Action>(Git.Push)
