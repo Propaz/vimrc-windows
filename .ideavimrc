@@ -73,13 +73,10 @@ nnoremap <leader>6 6gt
 nnoremap <leader>7 7gt
 nnoremap <leader>8 8gt
 nnoremap <leader>9 9gt
-nnoremap <leader>$ 99gt
 
 " --- Window Management ---
-" Split window vertically
-nnoremap <leader>wv :vsp<CR>
-" Split window horizontally
-nnoremap <leader>ws :sp<CR>
+map <leader>wv <Action>(SplitVertically)
+map <leader>ws <Action>(SplitHorizontally)
 
 " --- Editing ---
 " Quick save (useful even with auto-save to trigger file watchers, etc.)
@@ -124,17 +121,3 @@ vnoremap <leader>p "_dP
 map <leader>ga <Action>(Annotate)
 " Git Pull
 map <leader>gp <Action>(Git.Pull)
-
-" --- Surround functionality (requires IdeaVim 'Surround' plugin) ---
-" The 'Surround' plugin for IdeaVim enables powerful text object manipulation.
-" To use it, you need to enable the 'Surround' extension in IdeaVim settings.
-" Once enabled, you can use commands like:
-"   ys{motion}{char}  -  You Surround: Surround a text object with 'char'
-"     Example: ysiw"   -  surround inner word with double quotes
-"     Example: yss)    -  surround current line with parentheses
-"   cs{old}{new}     -  Change Surround: Change existing surrounding 'old' to 'new'
-"     Example: cs"'    -  change double quotes to single quotes
-"   ds{char}         -  Delete Surround: Delete surrounding 'char'
-"     Example: ds"     -  delete surrounding double quotes
-" For more details, refer to the IdeaVim documentation for the Surround plugin.
-
