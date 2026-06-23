@@ -18,6 +18,7 @@ set termguicolors       " Enable 24-bit RGB color in compatible terminals.
 set novisualbell        " No visual bell.
 
 set noerrorbells        " No audio bell.
+set belloff=all         " Disable all bells (visual and audio).
 set laststatus=2        " Always show the status line.
 set backupcopy=yes      " Always copy for backup, safer on Windows.
 
@@ -78,6 +79,12 @@ endif
 "  File and Backup Management
 " ============================================================================
 " Keep Vim's temporary files out of the working directory.
+" Create the directories if missing, otherwise backup/undo/swap silently fail.
+for s:dir in ['~/.vim/.undo', '~/.vim/.backup', '~/.vim/.swp']
+  if !isdirectory(expand(s:dir))
+    call mkdir(expand(s:dir), 'p')
+  endif
+endfor
 set undodir=~/.vim/.undo//
 set backupdir=~/.vim/.backup//
 set directory=~/.vim/.swp//
@@ -95,24 +102,19 @@ Plug 'ward/VimCompletesMe'
 Plug 'itchyny/vim-cursorword'
 
 " File & History
-Plug 'junegunn/fzf.vim'          " Fuzzy finder integration
 Plug 'junegunn/fzf',  { 'dir': '~/.fzf' } " Fuzzy finder core
+Plug 'junegunn/fzf.vim'          " Fuzzy finder integration
 Plug 'mbbill/undotree'           " Visualize undo history
 
 " Development & Git
-Plug 'tpope/vim-fugitive', { 'on': ['G', 'Git'] } " Git wrapper
+Plug 'tpope/vim-fugitive'        " Git wrapper (грузим сразу: ленивая загрузка по ['G','Git'] не цепляла :Gclog/:Ghdiffsplit)
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
 Plug 'preservim/nerdtree'         " File explorer
 
-" --- Fugitive (Git) ---
-" Используем 'delta' для красивых дифов в :Gdiffsplit, :Gclog, и т.д.
-if executable('delta')
-  let g:fugitive_diff_options = '--color=always'
-  let g:fugitive_pager = 'delta --dark --paging=never' " Используйте --light, если у вас светлая тема
-endif
 Plug 'dense-analysis/ale'        " Asynchronous linter and fixer
 Plug 'Propaz/karate-linter', { 'for': ['cucumber', 'karate'] }
+Plug 'fatih/vim-go', { 'do': ':GoUpdateBinaries' }
 
 call plug#end()
 
@@ -168,13 +170,14 @@ let g:lightline = { 'colorscheme': 'gruvbox' }
 " --- ALE (Asynchronous Lint Engine) ---
 " For Python, we use 'ruff' for linting/fixing and 'mypy' for type checking.
 " Assumes 'ruff' and 'mypy' are installed in your environment (e.g., via 'uv pip install ruff mypy').
-let g:ale_linters = {'python': ['ruff', 'mypy'], '*': ['remove_trailing_lines', 'trim_whitespace']}
+let g:ale_linters = {'python': ['ruff', 'mypy']}
 let g:ale_fixers = {'python': ['ruff'], '*': ['remove_trailing_lines', 'trim_whitespace']}
 
 let g:ale_fix_on_save = 1
 let g:ale_completion_enabled = 1
 let g:ale_completion_autoimport = 1
 let g:ale_sign_warning = 'W>'
+let g:ale_sign_error = 'E>'
 set completeopt=menu,menuone,preview,noselect,noinsert " Options for omni-completion
 
 " Python-specific ALE settings
@@ -188,15 +191,23 @@ let g:ale_python_auto_detect_virtualenv = 1
 let mapleader=","
 
 " --- Toggles & System ---
-nnoremap <silent> <F2> :set paste!<CR>          " Toggle paste mode
-nnoremap <silent> <F5> :UndotreeToggle<CR>       " Toggle Undotree
-nnoremap <silent> <leader>nr :set relativenumber!<CR> " Toggle relative numbering
-nnoremap <leader>vm :e ~/_vimrc<CR>                  " Edit this vimrc
-nnoremap <silent> <C-q> :q<CR>                   " Close current window
-nnoremap <leader>w :w<CR>                           " Quick save
+" Toggle paste mode
+nnoremap <silent> <F2> :set paste!<CR>
+" Toggle Undotree
+nnoremap <silent> <F5> :UndotreeToggle<CR>
+" Toggle relative numbering
+nnoremap <silent> <leader>nr :set relativenumber!<CR>
+" Edit this vimrc
+nnoremap <leader>vm :e ~/_vimrc<CR>
+" Close current window
+nnoremap <silent> <C-q> :q<CR>
+" Quick save
+nnoremap <leader>w :w<CR>
 " --- Clipboard Operations ---
-nnoremap <leader>cf :let @+=expand('%:t')<CR>          " Copy filename to clipboard
-nnoremap <leader>cfp :let @+=expand('%:p')<CR>         " Copy full path to clipboard
+" Copy filename to clipboard
+nnoremap <leader>cf :let @+=expand('%:t')<CR>
+" Copy full path to clipboard
+nnoremap <leader>cfp :let @+=expand('%:p')<CR>
 
 nnoremap <leader>cd :lcd %:p:h<CR>
 
@@ -209,13 +220,16 @@ nnoremap <silent> <PageDown> <C-D>zz
 vnoremap <silent> <PageDown> <C-D>zz
 inoremap <silent> <PageDown> <C-O><C-D><C-O>zz
 
-nnoremap <leader>e :NERDTreeToggle<CR>                           " Toggle NERDTree file explorer
+" Toggle NERDTree file explorer
+nnoremap <leader>e :NERDTreeToggle<CR>
 
 " Buffer navigation
-nnoremap <leader>d :bprevious<CR>:bdelete #<CR>     " Close current buffer
-nnoremap <leader>n :bn<CR>                          " Next buffer
-nnoremap <leader>p :bp<CR>                          " Previous buffer
-nnoremap <leader>b :buffer <Tab>                    " Switch buffer by name
+" Close current buffer
+nnoremap <leader>d :bprevious<CR>:bdelete #<CR>
+" Next buffer
+nnoremap <leader>n :bn<CR>
+" Previous buffer
+nnoremap <leader>p :bp<CR>
 
 " Tab navigation
 nnoremap <C-t>     :tabnew<CR>
@@ -229,9 +243,12 @@ nnoremap <leader>6 6gt
 nnoremap <leader>7 7gt
 
 " --- Editing & Text Manipulation ---
-nnoremap <leader>a ggVG                              " Select all
-nnoremap <silent> <leader><CR> o<ESC>                " Insert empty line below
-nnoremap <silent> <leader><space> :noh<CR>           " Clear search highlights
+" Select all
+nnoremap <leader>a ggVG
+" Insert empty line below
+nnoremap <silent> <leader><CR> o<ESC>
+" Clear search highlights
+nnoremap <silent> <leader><space> :noh<CR>
 nnoremap <silent> <leader>fcr :%s/\r//g<CR>:nohlsearch<CR>
 
 " Move lines up/down
@@ -321,9 +338,6 @@ function! VisualSelection(direction, extra_filter) range
     execute "normal! vgvy"
     let l:pattern = escape(@", "\\/.*'$^~[]")
     let l:pattern = substitute(l:pattern, "\n$", "", "")
-    if a:direction == 'replace'
-        call CmdLine("%s" . '/'. l:pattern . '/')
-    endif
     let @/ = l:pattern
     let @" = l:saved_reg
 endfunction
@@ -347,7 +361,7 @@ function! LargeFile()
   set nonumber
   filetype off
   filetype plugin indent off
-  autocmd VimEnter * echo "Large file mode: some features disabled for performance."
+  echomsg "Large file mode: some features disabled for performance."
 endfunction
 
 if has('win32')
