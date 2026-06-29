@@ -11,6 +11,7 @@ set noerrorbells
 set lazyredraw
 set cursorline
 set ideajoin
+set youcompleteme
 set clipboard=unnamed,unnamedplus " Use system clipboard for yank/paste
 
 " Use case-insensitive search, but switch to case-sensitive if an uppercase letter is used
