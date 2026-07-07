@@ -1,39 +1,111 @@
 " --- Generic settings ---
+" NOTE: Vim-only options (ruler, lazyredraw, showmatch, copyindent, shiftround,
+" visualbell/errorbells) are handled by the IDE itself and are no-ops in IdeaVim,
+" so they were removed to keep this file focused on what actually has an effect.
 set autoindent
-set copyindent
-set shiftround
-set showmatch
 set hlsearch
 set incsearch
-set ruler
-set novisualbell
-set noerrorbells
-set lazyredraw
+set scrolloff=5                    " keep some context above/below the cursor
 set cursorline
-set ideajoin
-set youcompleteme
 set clipboard=unnamed,unnamedplus " Use system clipboard for yank/paste
 
 " Use case-insensitive search, but switch to case-sensitive if an uppercase letter is used
 set ignorecase
 set smartcase
 
+" --- IdeaVim integration (IDE-specific) ---
+set ideajoin                      " J uses the IDE's smart-join (merges literals, if-stmts, etc.)
+set idearefactormode=keep         " stay in normal mode during inline refactorings
+set ideamarks                     " sync Vim marks with IDE bookmarks
+" Let the IDE own the system copy/paste chords regardless of Vim mode
+sethandler <C-c> a:ide
+sethandler <C-v> a:ide
+
+" --- Bundled Vim plugins ---
+set which-key                     " popup cheatsheet for leader mappings
+set timeoutlen=500                " comfortable wait window for which-key / prefixes
+set surround                      " cs\"' , ds( , ysiw) around text objects
+set highlightedyank               " briefly highlight the yanked region
+set commentary                    " gcc / gc{motion} / gcap commenting
+set ReplaceWithRegister           " grr / gr{motion} — paste register over target
+set argtextobj                    " aa / ia — function argument text object
+set textobj-entire                " ae / ie — whole buffer as a text object
+set matchit                       " % jumps between matching keywords/tags
+let g:highlightedyank_highlight_duration = "200"
+
 " --- Leader Key ---
 " Sets the leader key to comma.
 let mapleader=","
 
+" --- which-key labels ---
+" Format: let g:WhichKeyDesc_<uniqueName> = "<lhs> <label>"
+" A '+' prefix marks a group (a prefix that expands into more mappings).
+
+" Groups
+let g:WhichKeyDesc_run  = "<leader>r +run"
+let g:WhichKeyDesc_find  = "<leader>f +find/file"
+let g:WhichKeyDesc_goto  = "<leader>g +goto/git"
+let g:WhichKeyDesc_code  = "<leader>c +code"
+let g:WhichKeyDesc_hist  = "<leader>h +history"
+let g:WhichKeyDesc_win  = "<leader>w +window"
+
+" Run / Debug
+let g:WhichKeyDesc_run_debug = "<leader>rd Debug"
+let g:WhichKeyDesc_run_run  = "<leader>rr Run"
+let g:WhichKeyDesc_stop  = "<leader>ss Stop"
+
+" Find / File
+let g:WhichKeyDesc_find_inpath = "<leader>ff Find in files"
+let g:WhichKeyDesc_find_usages = "<leader>fu Find usages"
+let g:WhichKeyDesc_find_all  = "<leader>fa Search everywhere"
+let g:WhichKeyDesc_find_struct = "<leader>fs File structure"
+let g:WhichKeyDesc_find_save  = "<leader>fw Save all"
+
+" Goto / Git
+let g:WhichKeyDesc_goto_decl = "<leader>gd Go to declaration"
+let g:WhichKeyDesc_goto_blame = "<leader>ga Git annotate (blame)"
+let g:WhichKeyDesc_goto_pull = "<leader>gp Git pull"
+
+" Code
+let g:WhichKeyDesc_code_format  = "<leader>cf Reformat code"
+let g:WhichKeyDesc_code_refactor = "<leader>cr Refactor this"
+
+" History
+let g:WhichKeyDesc_hist_files = "<leader>hh Recent files"
+let g:WhichKeyDesc_hist_changes = "<leader>hc Recent changes"
+
+" Window
+let g:WhichKeyDesc_win_vsplit = "<leader>wv Split vertically"
+let g:WhichKeyDesc_win_hsplit = "<leader>ws Split horizontally"
+
+" Standalone
+let g:WhichKeyDesc_terminal  = "<leader>t Terminal"
+let g:WhichKeyDesc_nexttab  = "<leader>n Next tab"
+let g:WhichKeyDesc_prevtab  = "<leader>p Prev tab"
+let g:WhichKeyDesc_close  = "<leader>d Close editor"
+let g:WhichKeyDesc_switcher  = "<leader>b Switcher"
+let g:WhichKeyDesc_comment  = "<leader>/ Toggle comment"
+let g:WhichKeyDesc_selectall = "<leader>a Select all"
+let g:WhichKeyDesc_openbelow = "<leader>o Blank line below"
+let g:WhichKeyDesc_openabove = "<leader>O Blank line above"
+let g:WhichKeyDesc_nohl  = "<leader><space> Clear search highlight"
+let g:WhichKeyDesc_movedown  = "<leader>j Move line down"
+let g:WhichKeyDesc_moveup  = "<leader>k Move line up"
+" Note: ,r in visual mode is 'replace selection in file'; which-key keys labels
+" by the key sequence (not by mode), so it shares the ',r' group label above.
+
 " --- Best Practice: Use non-recursive mappings ---
 " For standard Vim commands, `noremap` variants (`nnoremap`, `vnoremap`) are best practice.
-" HOWEVER, for IDE-specific commands using `<Action>`, `map` is required to ensure they work correctly.
-" Therefore, we use `map` for <Action> mappings and `nnoremap`/`vnoremap` for everything else.
+" For IDE-specific `<Action>` commands recursion is not a concern, so `map` is used for
+" brevity/multi-mode convenience while `nnoremap`/`vnoremap` are used for the rest.
 
 " --- IDE Integration & Code Navigation ---
-" Debug current file/project
-map <leader>rd <Action>(Debug)
+" Debug current file/project (normal-mode only, so it doesn't clash with visual ,r)
+nmap <leader>rd <Action>(Debug)
 " Run current file/project
-map <leader>rr <Action>(Run)
+nmap <leader>rr <Action>(Run)
 " Stop current run/debug session
-map <leader>ss <Action>(Stop)
+nmap <leader>ss <Action>(Stop)
 " Find in Files (whole project)
 map <leader>ff <Action>(FindInPath)
 " Find Usages of the symbol under the cursor
@@ -80,8 +152,8 @@ map <leader>wv <Action>(SplitVertically)
 map <leader>ws <Action>(SplitHorizontally)
 
 " --- Editing ---
-" Quick save (useful even with auto-save to trigger file watchers, etc.)
-nnoremap <leader>w :w<CR>
+" Save all files. Bound under the ,f group to avoid the ,w / ,wv / ,ws prefix clash.
+map <leader>fw <Action>(SaveAll)
 
 " Commenting code using the IDE's action
 map <leader>/ <Action>(CommentByLineComment)
@@ -97,13 +169,10 @@ nnoremap <leader>O O<Esc>j
 " Clear search highlights
 nnoremap <silent> <leader><space> :noh<CR>
 
-" Move lines up/down in normal, insert, and visual modes
-nnoremap <leader>j :m .+1<CR>==
-nnoremap <leader>k :m .-2<CR>==
-inoremap <leader>j <Esc>:m .+1<CR>==gi
-inoremap <leader>k <Esc>:m .-2<CR>==gi
-vnoremap <leader>j :m '>+1<CR>gv=gv
-vnoremap <leader>k :m '<-2<CR>gv=gv
+" Move current line / selection up and down using the IDE-native action
+" (handles code folds and language syntax better than :m, and keeps the selection)
+map <leader>j <Action>(MoveLineDown)
+map <leader>k <Action>(MoveLineUp)
 
 " --- Visual Mode ---
 " Search for the visually selected text forwards/backwards
