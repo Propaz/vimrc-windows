@@ -17,9 +17,6 @@ set smartcase
 set ideajoin                      " J uses the IDE's smart-join (merges literals, if-stmts, etc.)
 set idearefactormode=keep         " stay in normal mode during inline refactorings
 set ideamarks                     " sync Vim marks with IDE bookmarks
-" Let the IDE own the system copy/paste chords regardless of Vim mode
-sethandler <C-c> a:ide
-sethandler <C-v> a:ide
 
 " --- Bundled Vim plugins ---
 set which-key                     " popup cheatsheet for leader mappings
@@ -185,6 +182,28 @@ vnoremap <silent> <leader>r y:%s/<C-R>""/g<Left><Left>
 
 " Paste without losing yanked text in visual mode (uses black hole register)
 vnoremap <leader>p "_dP
+
+" --- Clipboard / Copy-Paste ---
+" NOTE: thanks to `set clipboard=unnamed,unnamedplus` (top of file), plain
+" y / p / d / x already go through the system clipboard. The mappings below add
+" familiar Ctrl+Shift+C / Ctrl+Shift+V on top, WITHOUT touching Ctrl+V (visual
+" block) or Ctrl+C. We keep the explicit "+ register so intent stays obvious.
+"
+" sethandler forces IdeaVim (not the IDE) to own these keys in the editor,
+" otherwise IntelliJ's own Ctrl+Shift+C (copy path) / Ctrl+Shift+V (paste from
+" history) would swallow them. a:vim = all modes handled by Vim.
+sethandler <C-S-c> a:vim
+sethandler <C-S-v> a:vim
+
+" Copy
+vnoremap <C-S-c> "+y
+nnoremap <C-S-c> "+yy
+
+" Paste
+nnoremap <C-S-v> "+p
+vnoremap <C-S-v> "_d"+P
+inoremap <C-S-v> <C-r>+
+cnoremap <C-S-v> <C-r>+
 
 " --- Version Control ---
 " Git Annotate (Blame)
