@@ -163,9 +163,19 @@ if executable('ag')
   let g:fzf_ag_command = 'ag --nocolor --nogroup --column --hidden'
 endif
 
-" --- Lightline ---
-" Set a colorscheme for the status bar that matches the main theme.
-let g:lightline = { 'colorscheme': 'gruvbox' }
+" lightline configuration
+let g:lightline = {
+      \ 'colorscheme': 'gruvbox',
+      \ 'active': {
+      \   'left': [
+      \     [ 'mode', 'paste' ],
+      \     [ 'gitbranch', 'readonly', 'filename', 'modified' ]
+      \   ]
+      \ },
+      \ 'component_function': {
+      \   'gitbranch': 'FugitiveHead'
+      \ }
+      \ }
 
 " --- ALE (Asynchronous Lint Engine) ---
 " For Python, we use 'ruff' for linting/fixing and 'mypy' for type checking.
