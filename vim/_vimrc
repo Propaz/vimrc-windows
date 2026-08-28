@@ -22,9 +22,22 @@ set belloff=all         " Disable all bells (visual and audio).
 set laststatus=2        " Always show the status line.
 set backupcopy=yes      " Always copy for backup, safer on Windows.
 
-" Use system clipboard for all yank, delete, and put operations.
-" On Windows, 'unnamed' is often sufficient and can be more reliable.
-set clipboard=unnamed
+" Sync ONLY yanks (not deletes/changes) to the system clipboard.
+" 'clipboard=unnamed' would route deletes to the clipboard too, clobbering
+" whatever you copied from the OS. Instead, mirror to '+' on yank only.
+" Deletes/changes stay in Vim's own registers; use "+p to paste from the OS.
+if has('clipboard') && exists('##TextYankPost')
+  augroup YankToClipboard
+    autocmd!
+    autocmd TextYankPost *
+          \ if v:event.operator ==# 'y' && v:event.regname ==# '' |
+          \   call setreg('+', v:event.regcontents, v:event.regtype) |
+          \ endif
+  augroup END
+else
+  " Fallback for very old Vim without TextYankPost: at least don't let
+  " deletes clobber the clipboard. Copy explicitly with "+y / paste with "+p.
+endif
 
 " --- Text Formatting & Indentation ---
 set nowrap              " Do not wrap lines.
