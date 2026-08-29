@@ -233,6 +233,7 @@ nnoremap <leader>cf :let @+=expand('%:t')<CR>
 nnoremap <leader>cfp :let @+=expand('%:p')<CR>
 
 nnoremap <leader>cd :lcd %:p:h<CR>
+nnoremap <C-m> :let @+ = execute('messages')<CR>:echo "messages has been copied!"<CR>
 
 " --- Navigation & Buffers ---
 " Center screen on page up/down
