@@ -1,0 +1,11 @@
+# Tool caches (this repo is linted with ruff/mypy via the Vim config)
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+
+# Local load-test artefacts (see docs/CONVENTIONS.md#testing-a-change)
+loadtest.txt
+gvimtest.txt
+headtest.txt
+probe.vim
+startup.log
