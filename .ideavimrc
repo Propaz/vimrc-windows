@@ -1,139 +1,118 @@
-" --- Generic settings ---
-" NOTE: Vim-only options (ruler, lazyredraw, showmatch, copyindent, shiftround,
-" visualbell/errorbells) are handled by the IDE itself and are no-ops in IdeaVim,
-" so they were removed to keep this file focused on what actually has an effect.
-set autoindent
+" ============================================================================
+"  ~/.ideavimrc -- IdeaVim in IntelliJ IDEA and Rider on Windows
+"
+"  Companion to dotfiles\vim\_vimrc: the leader scheme is deliberately SHARED
+"  between the two, so muscle memory carries from gVim into the IDE and back.
+"  Do not repurpose a key on one side without the other.
+"
+"  Key map, install, requirements:  README.md
+"  Why any non-obvious value:       docs/RATIONALE.md
+"
+"  Verified against IdeaVim 2.46.2: option names, plugin names and every
+"  <Action> id. IdeaVim reports an unknown option as "E518" -- it does not
+"  abort the file, but it flags the config as broken on every start, so
+"  nothing Vim has and IdeaVim lacks belongs in here.
+" ============================================================================
+
+" ============================================================================
+"  Generic settings
+"
+"  IdeaVim implements a SUBSET of Vim's options (~60). Indentation, the status
+"  bar and the file lifecycle belong to the IDE, so their Vim options are
+"  absent here on purpose -- see docs/RATIONALE.md#ideavim-option-subset.
+" ============================================================================
+set number
+set relativenumber
+set scrolloff=8
+set cursorline
 set hlsearch
 set incsearch
-set scrolloff=5                    " keep some context above/below the cursor
-set cursorline
-set clipboard=unnamed,unnamedplus " Use system clipboard for yank/paste
-
-" Use case-insensitive search, but switch to case-sensitive if an uppercase letter is used
 set ignorecase
 set smartcase
 
-" --- IdeaVim integration (IDE-specific) ---
-set ideajoin                      " J uses the IDE's smart-join (merges literals, if-stmts, etc.)
-set idearefactormode=keep         " stay in normal mode during inline refactorings
-set ideamarks                     " sync Vim marks with IDE bookmarks
+" Matches _vimrc; safe only while the leader groups stay prefix-free.
+set timeoutlen=600
 
-" --- Bundled Vim plugins ---
-set which-key                     " popup cheatsheet for leader mappings
-set timeoutlen=500                " comfortable wait window for which-key / prefixes
-set surround                      " cs\"' , ds( , ysiw) around text objects
+" '^=' PREPENDS. A plain 'set clipboard=unnamed,unnamedplus' would DISCARD
+" IdeaVim's default "ideaput,autoselect", and losing 'ideaput' costs every
+" IDE paste handler: auto-import, reindent, the Java-to-Kotlin prompt.
+" On Windows '*' and '+' are the same clipboard, so 'unnamedplus' suffices.
+" Unlike _vimrc, deletes reach the clipboard too: IdeaVim has no
+" TextYankPost, so the yank-only trick does not port. Mappings that must not
+" touch the clipboard name a register explicitly (see "zy below).
+set clipboard^=unnamedplus
+
+" ============================================================================
+"  IdeaVim integration
+" ============================================================================
+set ideajoin                      " J uses the IDE's smart join
+set idearefactormode=keep         " stay in Normal mode during inline refactorings
+
+" Uncomment temporarily to learn action ids -- beats guessing <Action>() names.
+" set trackactionids
+
+" ============================================================================
+"  Emulated Vim plugins
+"
+"  Names IdeaVim 2.46.2 actually registers. What else ships and why it is off:
+"  docs/RATIONALE.md#ideavim-bundled-plugins
+" ============================================================================
+set surround                      " cs"' , ds( , ysiw)
+set commentary                    " gcc / gc{motion} / gcap
 set highlightedyank               " briefly highlight the yanked region
-set commentary                    " gcc / gc{motion} / gcap commenting
-set ReplaceWithRegister           " grr / gr{motion} — paste register over target
-set argtextobj                    " aa / ia — function argument text object
-set textobj-entire                " ae / ie — whole buffer as a text object
+set ReplaceWithRegister           " grr / gr{motion} -- paste OVER the target
+set argtextobj                    " aa / ia -- function argument
+set textobj-entire                " ae / ie -- whole buffer
 set matchit                       " % jumps between matching keywords/tags
 let g:highlightedyank_highlight_duration = "200"
 
-" --- Leader Key ---
-" Sets the leader key to comma.
+" ============================================================================
+"  Leader key
+"
+"  INVARIANT: no leader mapping may be a PREFIX of another, or it waits out
+"  'timeoutlen'. Groups: ,c* ,g* ,h* ,r* ,t* ,=* ,v* -- everything else is a
+"  leaf. The ,r* group is nmap-only so it never shadows Visual-mode ,r.
+" ============================================================================
 let mapleader=","
 
-" --- which-key labels ---
-" Format: let g:WhichKeyDesc_<uniqueName> = "<lhs> <label>"
-" A '+' prefix marks a group (a prefix that expands into more mappings).
+" ============================================================================
+"  sethandler -- who owns a shortcut in the editor
+"
+"  Without this the IDE swallows the key before IdeaVim sees it.
+" ============================================================================
+sethandler <C-S-c> a:vim          " IDE: Copy Reference
+sethandler <C-S-v> a:vim          " IDE: Paste from History
+sethandler <A-j>   a:vim          " IDE: Add Selection for Next Occurrence
+sethandler <A-k>   a:vim
+sethandler <F5>    a:vim          " IDE: Copy (refactoring)
 
-" Groups
-let g:WhichKeyDesc_run  = "<leader>r +run"
-let g:WhichKeyDesc_find  = "<leader>f +find/file"
-let g:WhichKeyDesc_goto  = "<leader>g +goto/git"
-let g:WhichKeyDesc_code  = "<leader>c +code"
-let g:WhichKeyDesc_hist  = "<leader>h +history"
-let g:WhichKeyDesc_win  = "<leader>w +window"
+" ============================================================================
+"  Files, navigation and windows
+"
+"  `map` is fine for <Action> mappings -- there is no Vim command underneath
+"  to recurse into -- and it covers Normal/Visual/Operator-pending at once.
+"  `nnoremap`/`xnoremap` are used wherever the right-hand side is real Vim.
+" ============================================================================
+map <leader>f <Action>(FindInPath)
+map <leader>F <Action>(GotoFile)
+map <leader>u <Action>(FindUsages)
+map <leader>l <Action>(FileStructurePopup)
+map <leader>b <Action>(Switcher)
+map <leader>e <Action>(ActivateProjectToolWindow)
+map <leader>w <Action>(SaveAll)
+map <leader>d <Action>(CloseEditor)
+map <leader>n <Action>(NextTab)
+map <leader>p <Action>(PreviousTab)
 
-" Run / Debug
-let g:WhichKeyDesc_run_debug = "<leader>rd Debug"
-let g:WhichKeyDesc_run_run  = "<leader>rr Run"
-let g:WhichKeyDesc_stop  = "<leader>ss Stop"
-
-" Find / File
-let g:WhichKeyDesc_find_inpath = "<leader>ff Find in files"
-let g:WhichKeyDesc_find_usages = "<leader>fu Find usages"
-let g:WhichKeyDesc_find_all  = "<leader>fa Search everywhere"
-let g:WhichKeyDesc_find_struct = "<leader>fs File structure"
-let g:WhichKeyDesc_find_save  = "<leader>fw Save all"
-
-" Goto / Git
-let g:WhichKeyDesc_goto_decl = "<leader>gd Go to declaration"
-let g:WhichKeyDesc_goto_blame = "<leader>ga Git annotate (blame)"
-let g:WhichKeyDesc_goto_pull = "<leader>gp Git pull"
-
-" Code
-let g:WhichKeyDesc_code_format  = "<leader>cf Reformat code"
-let g:WhichKeyDesc_code_refactor = "<leader>cr Refactor this"
+" Not mapped, deliberately: Search Everywhere is Shift+Shift, and `gd` / `gD`
+" are built into IdeaVim -- so ,gd stays free for git diff, as in _vimrc.
 
 " History
-let g:WhichKeyDesc_hist_files = "<leader>hh Recent files"
-let g:WhichKeyDesc_hist_changes = "<leader>hc Recent changes"
-
-" Window
-let g:WhichKeyDesc_win_vsplit = "<leader>wv Split vertically"
-let g:WhichKeyDesc_win_hsplit = "<leader>ws Split horizontally"
-
-" Standalone
-let g:WhichKeyDesc_terminal  = "<leader>t Terminal"
-let g:WhichKeyDesc_nexttab  = "<leader>n Next tab"
-let g:WhichKeyDesc_prevtab  = "<leader>p Prev tab"
-let g:WhichKeyDesc_close  = "<leader>d Close editor"
-let g:WhichKeyDesc_switcher  = "<leader>b Switcher"
-let g:WhichKeyDesc_comment  = "<leader>/ Toggle comment"
-let g:WhichKeyDesc_selectall = "<leader>a Select all"
-let g:WhichKeyDesc_openbelow = "<leader>o Blank line below"
-let g:WhichKeyDesc_openabove = "<leader>O Blank line above"
-let g:WhichKeyDesc_nohl  = "<leader><space> Clear search highlight"
-let g:WhichKeyDesc_movedown  = "<leader>j Move line down"
-let g:WhichKeyDesc_moveup  = "<leader>k Move line up"
-" Note: ,r in visual mode is 'replace selection in file'; which-key keys labels
-" by the key sequence (not by mode), so it shares the ',r' group label above.
-
-" --- Best Practice: Use non-recursive mappings ---
-" For standard Vim commands, `noremap` variants (`nnoremap`, `vnoremap`) are best practice.
-" For IDE-specific `<Action>` commands recursion is not a concern, so `map` is used for
-" brevity/multi-mode convenience while `nnoremap`/`vnoremap` are used for the rest.
-
-" --- IDE Integration & Code Navigation ---
-" Debug current file/project (normal-mode only, so it doesn't clash with visual ,r)
-nmap <leader>rd <Action>(Debug)
-" Run current file/project
-nmap <leader>rr <Action>(Run)
-" Stop current run/debug session
-nmap <leader>ss <Action>(Stop)
-" Find in Files (whole project)
-map <leader>ff <Action>(FindInPath)
-" Find Usages of the symbol under the cursor
-map <leader>fu <Action>(FindUsages)
-map <leader>fa <Action>(SearchEverywhere)
-" Open File Structure (outline)
-map <leader>fs <Action>(FileStructurePopup)
-" Go to Declaration
-map <leader>gd <Action>(GotoDeclaration)
-" Toggle IDE Terminal
-map <leader>t <Action>(ActivateTerminalToolWindow)
-" Format current file
-map <leader>cf <Action>(ReformatCode)
-" Quick Refactorings menu
-map <leader>cr <Action>(Refactorings.QuickListPopupAction)
-
-" --- File & Buffer Management ---
-" Recently opened files
 map <leader>hh <Action>(RecentFiles)
-" Recent changes
 map <leader>hc <Action>(RecentChanges)
-" Next editor tab
-map <leader>n <Action>(NextTab)
-" Previous editor tab
-map <leader>p <Action>(PreviousTab)
-" Close current editor tab
-map <leader>d <Action>(CloseEditor)
-" Use the IDE's powerful switcher for buffers, files, and symbols instead of `:b`
-map <leader>b <Action>(Switcher)
+nmap <F5> <Action>(LocalHistory.ShowHistory)
 
-" Jump to specific tabs (1-9), and last tab ($)
+" `gt` takes a count in IdeaVim exactly as in Vim.
 nnoremap <leader>1 1gt
 nnoremap <leader>2 2gt
 nnoremap <leader>3 3gt
@@ -144,69 +123,113 @@ nnoremap <leader>7 7gt
 nnoremap <leader>8 8gt
 nnoremap <leader>9 9gt
 
-" --- Window Management ---
-map <leader>wv <Action>(SplitVertically)
-map <leader>ws <Action>(SplitHorizontally)
+" Splits (<C-w>v / <C-w>s / <C-w>hjkl / <C-w>c) are native in IdeaVim.
 
-" --- Editing ---
-" Save all files. Bound under the ,f group to avoid the ,w / ,wv / ,ws prefix clash.
-map <leader>fw <Action>(SaveAll)
+" ============================================================================
+"  Problems  (mirrors the ALE mappings in _vimrc)
+" ============================================================================
+nmap [g <Action>(GotoPreviousError)
+nmap ]g <Action>(GotoNextError)
 
-" Commenting code using the IDE's action
-map <leader>/ <Action>(CommentByLineComment)
-vmap <leader>/ <Action>(CommentByLineComment)
+" ============================================================================
+"  Run / debug / refactor
+" ============================================================================
+nmap <leader>rr <Action>(Run)
+nmap <leader>rd <Action>(Debug)
+nmap <leader>rs <Action>(Stop)
+nmap <leader>rn <Action>(RenameElement)
+nmap <leader>rf <Action>(Refactorings.QuickListPopupAction)
 
-" Select all
+" ============================================================================
+"  Version control
+" ============================================================================
+map <leader>gb <Action>(Annotate)
+map <leader>gl <Action>(Vcs.ShowTabbedFileHistory)
+" Compare.SameVersion = diff against the repository version, i.e. what ,gd
+" does in _vimrc via :Ghdiffsplit.
+map <leader>gd <Action>(Compare.SameVersion)
+map <leader>gs <Action>(Vcs.Show.Local.Changes)
+map <leader>gp <Action>(Git.Pull)
+
+" ============================================================================
+"  Copy to clipboard
+"
+"  IdeaVim has no expand()/setreg()/getreg(), so the IDE actions do the work.
+"  ,cd and ,cm stay gVim-only: no :lcd and no execute() here.
+" ============================================================================
+map <leader>cf <Action>(CopyFileName)
+map <leader>cp <Action>(CopyAbsolutePath)
+
+" ============================================================================
+"  Format
+" ============================================================================
+map <leader>=f <Action>(ReformatCode)
+" No ':keeppatterns' in IdeaVim, so clear the highlight explicitly.
+nnoremap <silent> <leader>=r :%s/\r//ge<CR>:noh<CR>
+
+" ============================================================================
+"  Toggles
+" ============================================================================
+nnoremap <silent> <leader>tr :set relativenumber!<CR>
+nnoremap <silent> <leader>th :set hlsearch!<CR>
+map <leader>T <Action>(ActivateTerminalToolWindow)
+
+" ============================================================================
+"  Editing
+" ============================================================================
 map <leader>a <Action>($SelectAll)
+map <leader>/ <Action>(CommentByLineComment)
 
-" Insert empty line below/above while staying in normal mode on the same line
+" Blank line below/above without leaving the current line.
 nnoremap <leader>o o<Esc>k
 nnoremap <leader>O O<Esc>j
 
-" Clear search highlights
 nnoremap <silent> <leader><space> :noh<CR>
 
-" Move current line / selection up and down using the IDE-native action
-" (handles code folds and language syntax better than :m, and keeps the selection)
+" MoveLineDown/Up is the plain line move, i.e. what _vimrc's ':m' does.
+" (MoveStatementDown/Up is the syntax-aware one -- not bound here.)
 map <leader>j <Action>(MoveLineDown)
 map <leader>k <Action>(MoveLineUp)
+map <A-j> <Action>(MoveLineDown)
+map <A-k> <Action>(MoveLineUp)
+imap <A-j> <Action>(MoveLineDown)
+imap <A-k> <Action>(MoveLineUp)
 
-" --- Visual Mode ---
-" Search for the visually selected text forwards/backwards
-vnoremap <silent> * y/<C-R>"<CR>
-vnoremap <silent> # y?<C-R>"<CR>
+" ============================================================================
+"  This config
+" ============================================================================
+" ':split', not ':edit'. In IdeaVim 2.46.2 ':edit' does NOT run its argument
+" through path expansion, so ':e ~/.ideavimrc' fails to find the file.
+nnoremap <leader>vm :split ~/.ideavimrc<CR>
+nnoremap <leader>vs :source ~/.ideavimrc<CR>
 
-" Replace visually selected text across the whole file.
-" Yanks the selection and prepares a substitution command, waiting for your input.
-vnoremap <silent> <leader>r y:%s/<C-R>""/g<Left><Left>
-
-" Paste without losing yanked text in visual mode (uses black hole register)
-vnoremap <leader>p "_dP
-
-" --- Clipboard / Copy-Paste ---
-" NOTE: thanks to `set clipboard=unnamed,unnamedplus` (top of file), plain
-" y / p / d / x already go through the system clipboard. The mappings below add
-" familiar Ctrl+Shift+C / Ctrl+Shift+V on top, WITHOUT touching Ctrl+V (visual
-" block) or Ctrl+C. We keep the explicit "+ register so intent stays obvious.
+" ============================================================================
+"  Visual mode
 "
-" sethandler forces IdeaVim (not the IDE) to own these keys in the editor,
-" otherwise IntelliJ's own Ctrl+Shift+C (copy path) / Ctrl+Shift+V (paste from
-" history) would swallow them. a:vim = all modes handled by Vim.
-sethandler <C-S-c> a:vim
-sethandler <C-S-v> a:vim
+"  "z is an EXPLICIT register: IdeaVim only routes a yank through 'clipboard'
+"  when no register was named, so this leaves the system clipboard alone.
+"  '\V' (very nomagic) makes the selection literal, so text containing '.',
+"  '*' or '[' is searched for as characters, not as a broken regex.
+"  A selection containing '/' or a newline still needs a manual fix-up --
+"  IdeaVim has no expression register on the search line and no substitute().
+" ============================================================================
+xnoremap <silent> * "zy/\V<C-R><C-R>z<CR>
+xnoremap <silent> # "zy?\V<C-R><C-R>z<CR>
 
-" Copy
-vnoremap <C-S-c> "+y
+" NOT <silent>: the command line has to stay on screen for the replacement.
+xnoremap <leader>r "zy:%s/\V<C-R><C-R>z//g<Left><Left>
+
+" ============================================================================
+"  Explicit clipboard keys
+"
+"  'clipboard' already routes y/p/d/x through the system clipboard; these add
+"  Ctrl+Shift+C / Ctrl+Shift+V on top and deliberately leave Ctrl+V (Visual
+"  block) and Ctrl+C alone.
+" ============================================================================
+xnoremap <C-S-c> "+y
 nnoremap <C-S-c> "+yy
 
-" Paste
 nnoremap <C-S-v> "+p
-vnoremap <C-S-v> "_d"+P
+xnoremap <C-S-v> "_d"+P
 inoremap <C-S-v> <C-r>+
 cnoremap <C-S-v> <C-r>+
-
-" --- Version Control ---
-" Git Annotate (Blame)
-map <leader>ga <Action>(Annotate)
-" Git Pull
-map <leader>gp <Action>(Git.Pull)
