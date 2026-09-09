@@ -98,8 +98,8 @@ before adding a mapping.
 | `,b` | switcher | `:Buffers` | Switcher |
 | `,e` | project tree | NERDTree | Project tool window |
 | `,1`…`,9` | go to tab N | `gt` | `gt` |
-| `,f` | find text in project | `:Rg` | Find in Path |
-| `,F` | find file by name | `:Files` | Go to File |
+| `,rg` | find text in project | `:Rg` | Find in Path |
+| `,ff` | find file by name | `:Files` | Go to File |
 | `,u` | usages of word under cursor | `:Rg <cword>` | Find Usages |
 | `,l` | jump inside current file | `:BLines` | File Structure |
 | `,a` | select all | `ggVG` | Select All |
