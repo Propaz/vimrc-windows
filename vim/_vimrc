@@ -573,9 +573,9 @@ nnoremap <silent> <Leader>b  :Buffers<CR>
 " Shift flips "text" to "file": ,f/,F take a prompt, ,u/,U take <cword>.
 nnoremap <silent> <Leader>F  :Files<CR>
 nnoremap <silent> <C-f>      :Files<CR>
-nnoremap <silent> <Leader>f  :Rg<CR>
+nnoremap <silent> <Leader>rg  :Rg<CR>
 nnoremap <silent> <Leader>u  :Rg <C-R><C-W><CR>
-nnoremap <silent> <Leader>U  :FZF -q <C-R><C-W><CR>
+nnoremap <silent> <Leader>ff :FZF -q <C-R><C-W><CR>
 " ,l = fuzzy-jump inside the current file (the IDE's File Structure popup).
 nnoremap <silent> <Leader>l  :BLines<CR>
 nnoremap <silent> <Leader>hh :History<CR>

@@ -57,7 +57,7 @@ set idearefactormode=keep         " stay in Normal mode during inline refactorin
 "  Names IdeaVim 2.46.2 actually registers. What else ships and why it is off:
 "  docs/RATIONALE.md#ideavim-bundled-plugins
 " ============================================================================
-set surround                      " cs"' , ds( , ysiw)
+set surround
 set commentary                    " gcc / gc{motion} / gcap
 set highlightedyank               " briefly highlight the yanked region
 set ReplaceWithRegister           " grr / gr{motion} -- paste OVER the target
