@@ -1,88 +1,59 @@
 " ============================================================================
-"  _vimrc -- gVim on Windows (gvim.exe 9.2 x64, DirectWrite, UTF-8)
-"
-"  GUI-first. The few genuinely terminal-only options are guarded with
-"  !has('gui_running') so a console fallback still behaves.
-"
-"  Why any non-obvious value is what it is:  docs/RATIONALE.md
-"  Key map, install, requirements:           README.md
+"  _vimrc -- gvim.exe 9.2 x64, Win32 GUI, DirectWrite
+"  Rationale: docs/RATIONALE.md    Key map: README.md
 " ============================================================================
-set nocompatible
-
-" Must be settled before anything touches text, and before DirectWrite.
-set encoding=utf-8
-scriptencoding utf-8
-set fileencodings=ucs-bom,utf-8,cp1251,latin1   " cp1251 for legacy RU files
+set nocompatible            " implied for ~/_vimrc, but not under 'gvim -u'
+set fileencodings=ucs-bom,utf-8,cp1251,latin1
 
 " Before plugins load, or their <Leader> mappings bind to the old leader.
 let mapleader = ","
 
 " ============================================================================
-"  Platform: shell
+"  Shell
 " ============================================================================
-" Pin the whole cmd.exe family: $SHELL from MSYS2 / Git-Bash silently breaks
-" :!, :grep and fzf under gVim.
-if has('win32')
-  set shell=cmd.exe
-  set shellcmdflag=/s\ /c
-  set shellquote=
-  set shellxquote=\"
-  set shellpipe=>%s\ 2>&1     " not '|' -- a bare '|' in :set is a separator
-  set shellredir=>%s\ 2>&1
-  set noshellslash
-endif
+" ONLY 'shell'. Vim derives the rest (shcf=/c, sxq=(, sxe) after the vimrc,
+" but only for options left unset here -- set any of them and vim-go's
+" 'set shellxquote&' resets it to "" and every go call breaks.
+" docs/RATIONALE.md#windows-shell
+set shell=cmd.exe
 
 " ============================================================================
-"  General settings
+"  General
 " ============================================================================
-" --- Behavior ---
 set hidden
 set history=10000
 set undolevels=10000
 set autoread
-set belloff=all             " supersedes visualbell / errorbells
-set backupcopy=yes          " copy, never rename: ~/_vimrc is a symlink
+set belloff=all
+set backupcopy=yes          " ~/_vimrc is a symlink
 set timeoutlen=600          " safe only while leader groups stay prefix-free
 set updatetime=300
 set splitbelow splitright
 set display=truncate
+" No 'lazyredraw': torn glyphs under DirectWrite.
 
-" 'lazyredraw' deliberately NOT set: torn glyphs under gVim + DirectWrite.
+" Mirror yanks (not deletes) to the OS clipboard.
+augroup YankToClipboard
+  autocmd!
+  autocmd TextYankPost *
+        \ if v:event.operator ==# 'y' && v:event.regname ==# '' |
+        \   call setreg('+', v:event.regcontents, v:event.regtype) |
+        \ endif
+augroup END
 
-" Terminal-only feature; the GUI uses guifg/guibg directly. Needs +vtp on the
-" Win32 console, else E954 here and E254 from lightline.
-if !has('gui_running') && has('termguicolors')
-      \ && (!has('win32') || has('vcon'))
-  set termguicolors
-endif
-
-" Mirror YANKS only to '+'. 'clipboard=unnamed' would route deletes there too
-" and clobber the OS clipboard; use "+p to paste from it.
-if has('clipboard_working') && exists('##TextYankPost')
-  augroup YankToClipboard
-    autocmd!
-    autocmd TextYankPost *
-          \ if v:event.operator ==# 'y' && v:event.regname ==# '' |
-          \   call setreg('+', v:event.regcontents, v:event.regtype) |
-          \ endif
-  augroup END
-endif
-
-" --- Text formatting and indentation ---
+" --- Indentation ---
 set nowrap
-set sidescroll=1            " with 'nowrap', scroll by 1 col, not half a screen
+set sidescroll=1
 set sidescrolloff=8
 set tabstop=4
 set shiftwidth=4
-set expandtab
 set softtabstop=4
-set smarttab
+set expandtab
 set autoindent
 set copyindent
 set shiftround
-set backspace=indent,eol,start
 
-" --- Searching ---
+" --- Search ---
 set ignorecase
 set smartcase
 set hlsearch
@@ -93,59 +64,41 @@ if executable('rg')
   set grepformat=%f:%l:%c:%m
 endif
 
-" --- UI and display ---
+" --- UI ---
 set number
 set relativenumber
-set signcolumn=yes          " reserved always: ALE signs must not shift text
+set signcolumn=yes
 set scrolloff=8
 set laststatus=2
-set ruler                   " inert under lightline; matters in the no-plugin fallback
-set title
-set background=dark         " must precede :colorscheme for gruvbox
-set mouse=a
-set wildmenu
+set background=dark         " before :colorscheme
 set wildmode=longest:full,full
+set wildoptions=pum
 set wildignore=*.swp,*.bak,*.pyc,*.class,*.o
-silent! set wildoptions=pum " popup wildmenu; needs patch-8.2.4325
-
-" 'showmatch' deliberately NOT set: it jumps the cursor to the match. The
-" bundled matchparen plugin highlights the pair in place instead.
+" No 'showmatch': it jumps the cursor; matchparen highlights in place.
 
 " ============================================================================
-"  GUI: font and DirectWrite rendering
-"
-"  renmode MUST stay pinned to an integer-advance mode, or glyphs drift and
-"  staircase across the line (docs/RATIONALE.md#directwrite-glyph-drift):
-"
-"    renmode:3  GDI_NATURAL        ClearType + integer advances  <- default here
-"    renmode:2  GDI_CLASSIC        snaps hardest to the grid
-"    renmode:5  NATURAL_SYMMETRIC  prettiest, fractional, drift-prone
-"    renmode:0  DEFAULT            DirectWrite decides
-"
-"  If it ever reappears: <F10> cycles renmode, <F9> rebuilds the render
-"  target, :RenderGDI drops to plain GDI (cannot drift).
+"  GUI: font and DirectWrite
+"  renmode must stay integer-advance or glyphs drift:
+"    3 GDI_NATURAL (default)  2 GDI_CLASSIC  5 NATURAL_SYMMETRIC  0 DEFAULT
+"  <F9> rebuild render target, <F10> cycle renmode, :RenderGDI plain GDI.
+"  docs/RATIONALE.md#directwrite-glyph-drift
 " ============================================================================
 if has('gui_running')
-  " No ':cANSI' suffix -- it forces the ANSI codepage, so gVim picks a
-  " FALLBACK font for Cyrillic, and two advance widths on one screen is itself
-  " a source of misaligned glyphs. Consolas ships Cyrillic.
-  set guifont=Consolas:h14
-  set linespace=0             " deterministic line height; no vertical creep
-
+  set guifont=Consolas:h14    " no ':cANSI' -- it forces a fallback Cyrillic font
+  set linespace=0
   set guicursor=n-v-c:block,i-ci:ver25,r-cr:hor20
 
   if has('directx')
-    if !exists('g:gui_renmode') | let g:gui_renmode = 3 | endif
-    if !exists('g:gui_taamode') | let g:gui_taamode = 1 | endif  " 1 = CLEARTYPE
-    if !exists('g:gui_geom')    | let g:gui_geom    = 1 | endif  " 1 = RGB stripe
+    let g:gui_renmode = get(g:, 'gui_renmode', 3)
+    let g:gui_taamode = get(g:, 'gui_taamode', 1)   " CLEARTYPE
+    let g:gui_geom    = get(g:, 'gui_geom', 1)      " RGB stripe
 
     function! s:RopApply() abort
       let &renderoptions = printf('type:directx,geom:%d,renmode:%d,taamode:%d',
             \ g:gui_geom, g:gui_renmode, g:gui_taamode)
     endfunction
 
-    " For glyphs that have ALREADY drifted: <C-l> only repaints the grid, it
-    " does not re-create the render target, so the bad layout survives it.
+    " <C-l> repaints but keeps the render target, so drift survives it.
     function! s:RenderReset() abort
       let l:saved = &renderoptions
       set renderoptions=
@@ -157,8 +110,7 @@ if has('gui_running')
 
     function! s:RenderCycle() abort
       let l:modes = [3, 2, 5, 0]
-      let l:i = index(l:modes, g:gui_renmode)
-      let g:gui_renmode = l:modes[(l:i + 1) % len(l:modes)]
+      let g:gui_renmode = l:modes[(index(l:modes, g:gui_renmode) + 1) % len(l:modes)]
       call s:RopApply()
       redraw!
       echo 'renmode=' . g:gui_renmode . '  ->  ' . &renderoptions
@@ -167,7 +119,7 @@ if has('gui_running')
     function! s:RenderGDI() abort
       set renderoptions=
       redraw!
-      echo 'renderer: GDI (renderoptions empty)'
+      echo 'renderer: GDI'
     endfunction
 
     command! RenderReset call s:RenderReset()
@@ -183,9 +135,8 @@ if has('gui_running')
 endif
 
 " ============================================================================
-"  File and backup management
+"  State: undo / swap (prune with vim-state-clean.bat)
 " ============================================================================
-" State lives under ~/.vim, plugins under ~/vimfiles -- see docs/RATIONALE.md.
 for s:dir in ['~/.vim/.undo', '~/.vim/.backup', '~/.vim/.swp']
   if !isdirectory(expand(s:dir))
     call mkdir(expand(s:dir), 'p')
@@ -194,51 +145,36 @@ endfor
 set undodir=~/.vim/.undo//
 set backupdir=~/.vim/.backup//
 set directory=~/.vim/.swp//
-
-" 'writebackup' keeps the crash-safety window during a write without
-" accumulating history that git and 'undofile' already provide. Plain 'backup'
-" had grown ~/.vim/.backup to 39 MB / 317 files, pruning nothing.
-set swapfile nobackup writebackup undofile
-
-" Vim never prunes these dirs; housekeeping lives outside this config:
-"   dotfiles\vim-state-clean.bat                 report
-"   dotfiles\vim-state-clean.bat --apply         prune the safe categories
-"   dotfiles\vim-state-clean.bat --recover-cmds  `vim -r` for risky swaps
+set undofile                " 'writebackup' and no 'backup' are the defaults
 
 " ============================================================================
 "  Plugins (vim-plug)
 " ============================================================================
-" Survive a fresh clone with no plug.vim yet: enable the basics and carry on.
 if filereadable(expand('~/vimfiles/autoload/plug.vim'))
 
 call plug#begin('~/vimfiles/plugged')
 
-" Core
 Plug 'itchyny/lightline.vim'
 Plug 'morhetz/gruvbox'
 Plug 'ward/VimCompletesMe'
 Plug 'itchyny/vim-cursorword'
 
-" File and history
-" No 'do': fzf#install() -- fzf.exe comes from scoop and is on $PATH, so this
-" clone only supplies the Vim plugin half.
+" fzf.exe comes from scoop; this clone is only the Vim half.
 Plug 'junegunn/fzf',  { 'dir': '~/.fzf' }
 Plug 'junegunn/fzf.vim'
 Plug 'mbbill/undotree', { 'on': 'UndotreeToggle' }
 
-" Development and git
-" Eager: lazy-loading on ['G','Git'] missed :Gclog / :Ghdiffsplit.
+" Eager: lazy fugitive misses :Gclog; lazy NERDTree cannot hijack netrw.
 Plug 'tpope/vim-fugitive'
 Plug 'tpope/vim-commentary'
 Plug 'tpope/vim-surround'
-" Eager: NERDTreeHijackNetrw only works if NERDTree is loaded when a directory
-" is opened, so it cannot sit behind the toggle command.
 Plug 'preservim/nerdtree'
 
 Plug 'dense-analysis/ale'
 Plug 'Propaz/karate-linter', { 'for': ['cucumber', 'karate'] }
-" Deferred: vim-go is heavy and pulls in its own tooling.
-Plug 'fatih/vim-go', { 'for': 'go', 'do': ':GoUpdateBinaries' }
+Plug 'fatih/vim-go', {
+      \ 'for': ['go', 'gomod', 'gowork', 'gosum', 'gohtmltmpl'],
+      \ 'do': ':GoUpdateBinaries' }
 
 call plug#end()
 
@@ -248,41 +184,31 @@ else
   syntax enable
 endif
 
-" ============================================================================
-"  Appearance
-" ============================================================================
-" 'silent!': before the first :PlugInstall a bare :colorscheme throws E185 and
-" ABORTS the rest of this file.
+" silent!: before the first :PlugInstall E185 would abort the file.
 silent! colorscheme gruvbox
 
 " ============================================================================
 "  Plugin configuration
 " ============================================================================
-" --- netrw / NERDTree ---
-" netrw stays ENABLED: disabling it also kills 'gx' and fugitive's :GBrowse,
-" and it contradicts hijacking, which is the supported way to combine them.
+" --- NERDTree (netrw stays enabled for gx / :GBrowse) ---
 let g:NERDTreeMinimalUI = 1
 let g:NERDTreeHijackNetrw = 1
 let g:NERDTreeShowHidden = 1
 let g:NERDTreeQuitOnOpen = 1
-
-" Vim regex, not glob: '\v' would mean "very magic", so a bare '\venv' pattern
-" collapses to 'env' and hides every path containing that substring.
+" Vim regexes, not globs.
 let g:NERDTreeIgnore = [
     \ '\.pyc$', '\.swp$', '\.git$', '\.hg$', '\.svn$', '\.DS_Store$',
     \ '__pycache__', '^venv$', '\.venv', '\.mypy_cache'
     \ ]
 
 " --- fzf ---
-" Bottom split: avoids the floating-window rendering issues in gVim.
 let g:fzf_layout = { 'down': '~40%' }
 
 if executable('bat')
   let g:fzf_preview_window = ['right:50%:wrap', 'ctrl-/']
 endif
 
-" ':Ag' takes its flags from the command definition; g:fzf_ag_command is not
-" read by fzf.vim at all, so override the command instead.
+" fzf.vim has no option for :Ag flags, so redefine the command.
 if executable('ag')
   command! -bang -nargs=* Ag
         \ call fzf#vim#ag(<q-args>, '--nocolor --nogroup --column --hidden',
@@ -303,16 +229,17 @@ let g:lightline = {
       \ }
       \ }
 
-" --- ALE ---
-" 'go': [] -- vim-go already provides Go diagnostics.
-let g:ale_linters = {'python': ['ruff', 'mypy'], 'go': []}
+" --- vim-go ---
+" ALE has 'go': [], so gopls via vim-go is the only Go linter; its default
+" level 0 drops every diagnostic.
+let g:go_diagnostics_level = 2
 
-" Both halves are needed: 'ruff_format' formats, 'ruff' applies lint fixes.
+" --- ALE ---
+let g:ale_linters = {'python': ['ruff', 'mypy'], 'go': []}
 let g:ale_fixers = {
       \ 'python': ['ruff_format', 'ruff'],
       \ '*': ['remove_trailing_lines', 'trim_whitespace']
       \ }
-
 let g:ale_fix_on_save = 1
 let g:ale_completion_enabled = 1
 let g:ale_completion_autoimport = 1
@@ -320,8 +247,7 @@ let g:ale_sign_warning = 'W>'
 let g:ale_sign_error = 'E>'
 set completeopt=menu,menuone,preview,noselect,noinsert
 
-" mypy costs ~133 ms warm / ~565 ms cold even on a four-line file, and ALE's
-" default re-runs it 200 ms after every pause in typing.
+" mypy is too slow to run on every pause in typing.
 let g:ale_lint_on_text_changed = 'never'
 let g:ale_lint_on_insert_leave = 1
 let g:ale_lint_on_save = 1
@@ -329,15 +255,10 @@ let g:ale_lint_on_save = 1
 " ============================================================================
 "  Python toolchain (venv-aware)
 " ============================================================================
-" Run tools as `uv run <tool>` whenever a uv.lock sits above the buffer.
 let g:ale_python_auto_uv = 1
+let g:ale_python_auto_virtualenv = 1    " LSP linters only
 
-" Read ONLY by the LSP linters (jedils, pylsp, pyright); no effect on
-" ruff or mypy.
-let g:ale_python_auto_virtualenv = 1
-
-" ALE's completion and autoimport are LSP-only, so g:ale_completion_enabled
-" above stays inert until one of these is present. First match wins.
+" ALE completion is LSP-only. First match wins.
 let g:python_lsp_preference = get(g:, 'python_lsp_preference',
       \ ['pylsp', 'jedils', 'pyright'])
 
@@ -352,29 +273,23 @@ let s:python_lsp_pkg = {
       \ 'pyright': 'pyright',
       \ }
 
-" Warn once per venv, not once per buffer.
 let s:python_warned = {}
 
-" Executable inside the venv, falling back to $PATH. Empty when absent.
+" Executable inside the venv, else on %PATH%, else ''.
 function! s:PyExe(venv, exe) abort
   if !empty(a:venv)
     let l:p = a:venv . '\Scripts\' . a:exe . '.exe'
-
     if executable(l:p)
       return l:p
     endif
   endif
-
   return executable(a:exe) ? a:exe : ''
 endfunction
 
 function! s:PythonDetect() abort
   let l:info = {'venv': '', 'lsp': '', 'missing': [], 'ale': 1}
 
-  " Do NOT guard this with exists('*ale#python#FindVirtualenv'): for an
-  " autoload function not yet sourced, exists() returns 0, which would
-  " silently disable detection on every first call. try/catch triggers the
-  " autoload and still survives ALE being absent.
+  " Not exists('*...'): that is 0 for an unsourced autoload function.
   try
     let l:info.venv = ale#python#FindVirtualenv(bufnr(''))
   catch /^Vim\%((\a\+)\)\=:E117/
@@ -399,30 +314,24 @@ endfunction
 
 function! s:PythonSetup() abort
   let l:info = s:PythonDetect()
-
   if !l:info.ale
     return
   endif
 
-  " Attach the LSP only when it exists, else ALE reports a missing executable
-  " on every lint pass.
   let b:ale_linters = ['ruff', 'mypy']
         \ + (empty(l:info.lsp) ? [] : [l:info.lsp])
 
-  " One warning per environment. A fully provisioned venv stays silent.
+  " Warn once per environment.
   let l:key = empty(l:info.venv) ? '<none>:' . expand('%:p:h') : l:info.venv
-
   if has_key(s:python_warned, l:key)
     return
   endif
-
   let s:python_warned[l:key] = 1
 
   let l:msgs = []
   let l:pkgs = []
 
   if empty(l:info.venv)
-    " get(): ALE defines this in an autoload file that may not be sourced.
     call add(l:msgs, 'no virtualenv found above this file (looked for '
           \ . join(get(g:, 'ale_virtualenv_dir_names',
           \            ['.venv', 'env', 've', 'venv', 'virtualenv', '.env']), ', ')
@@ -453,14 +362,15 @@ function! s:PythonSetup() abort
   echohl None
 endfunction
 
-" What did detection actually pick for this buffer?
 function! s:PythonToolInfo() abort
   let l:info = s:PythonDetect()
+  let l:ruff = s:PyExe(l:info.venv, 'ruff')
+  let l:mypy = s:PyExe(l:info.venv, 'mypy')
   echo 'venv    : ' . (empty(l:info.venv) ? '(none)' : l:info.venv)
   echo 'lsp     : ' . (empty(l:info.lsp) ? '(none)' : l:info.lsp
         \ . '  ->  ' . s:PyExe(l:info.venv, s:python_lsp_exe[l:info.lsp]))
-  echo 'ruff    : ' . (empty(s:PyExe(l:info.venv, 'ruff')) ? '(none)' : s:PyExe(l:info.venv, 'ruff'))
-  echo 'mypy    : ' . (empty(s:PyExe(l:info.venv, 'mypy')) ? '(none)' : s:PyExe(l:info.venv, 'mypy'))
+  echo 'ruff    : ' . (empty(l:ruff) ? '(none)' : l:ruff)
+  echo 'mypy    : ' . (empty(l:mypy) ? '(none)' : l:mypy)
   echo 'linters : ' . string(get(b:, 'ale_linters', get(g:ale_linters, 'python', [])))
 endfunction
 command! PythonToolInfo call s:PythonToolInfo()
@@ -469,14 +379,10 @@ command! PythonToolInfo call s:PythonToolInfo()
 "  Key mappings
 "
 "  INVARIANT: no leader mapping may be a PREFIX of another, or it waits out
-"  'timeoutlen' (600 ms) on every use. Groups, all prefix-free:
+"  'timeoutlen' on every use. Prefix groups:
 "    ,c* clipboard   ,g* git   ,t* toggles   ,=* format   ,h* history
 "    ,v* this config
-"  Everything else is a leaf. Adding ',xy' when ',x' exists breaks ',x'.
-"
-"  The full table shared with ~/.ideavimrc is in README.md -- those keys mean
-"  the same thing in gVim and in the JetBrains IDEs, so do not repurpose one
-"  side without the other.
+"  Shared with ~/.ideavimrc via the README.md table -- change both or neither.
 " ============================================================================
 
 " --- Toggles and system ---
@@ -485,7 +391,6 @@ nnoremap <silent> <F5> :UndotreeToggle<CR>
 nnoremap <silent> <leader>tr :set relativenumber!<CR>
 nnoremap <silent> <leader>tp :set paste!<CR>
 nnoremap <silent> <leader>th :set hlsearch!<CR>
-" $MYVIMRC resolves to the file Vim actually loaded.
 nnoremap <leader>vm :edit $MYVIMRC<CR>
 nnoremap <silent> <leader>vs :source $MYVIMRC<CR>:echo 'vimrc reloaded'<CR>
 nnoremap <silent> <C-q> :q<CR>
@@ -498,7 +403,6 @@ nnoremap <silent> <leader>cd :lcd %:p:h<CR>:pwd<CR>
 nnoremap <silent> <leader>cm :let @+ = execute('messages')<CR>:echo 'messages copied'<CR>
 
 " --- Navigation and buffers ---
-" Center the screen on page up/down.
 nnoremap <silent> <PageUp>   <C-U>zz
 xnoremap <silent> <PageUp>   <C-U>zz
 inoremap <silent> <PageUp>   <C-O><C-U><C-O>zz
@@ -524,45 +428,34 @@ nnoremap <leader>7 7gt
 nnoremap <leader>8 8gt
 nnoremap <leader>9 9gt
 
-" --- Editing and text manipulation ---
+" --- Editing ---
 nnoremap <leader>a ggVG
-" Blank line below/above WITHOUT leaving the current line. ',<CR>' is an alias
-" for the old habit; ',o' / ',O' is what ~/.ideavimrc uses.
 nnoremap <silent> <leader>o o<Esc>k
 nnoremap <silent> <leader>O O<Esc>j
 nnoremap <silent> <leader><CR> o<Esc>k
 nnoremap <silent> <leader><space> :nohlsearch<CR>
-" <Plug> mappings, so they follow &commentstring like gcc/gc do.
 nmap <leader>/ <Plug>CommentaryLine
 xmap <leader>/ <Plug>Commentary
-" ',T' so the ',t*' toggle group stays prefix-free.
 nnoremap <silent> <leader>T :terminal<CR>
 
-" Move lines. Alt-based so they work in Insert mode without hanging a
-" 'timeoutlen' wait on every comma typed in prose.
 nnoremap <silent> <A-j> :m .+1<CR>==
 nnoremap <silent> <A-k> :m .-2<CR>==
 inoremap <silent> <A-j> <Esc>:m .+1<CR>==gi
 inoremap <silent> <A-k> <Esc>:m .-2<CR>==gi
 xnoremap <silent> <A-j> :m '>+1<CR>gv=gv
 xnoremap <silent> <A-k> :m '<-2<CR>gv=gv
-" Leader aliases kept for muscle memory.
 nnoremap <silent> <leader>j :m .+1<CR>==
 nnoremap <silent> <leader>k :m .-2<CR>==
 xnoremap <silent> <leader>j :m '>+1<CR>gv=gv
 xnoremap <silent> <leader>k :m '<-2<CR>gv=gv
 
-" --- Format / filter buffer (,= group) ---
-" jq requires jq.exe on %PATH%. In a Visual mapping ':' ALREADY inserts
-" '<,'>, so the Visual variants must NOT spell the range again.
+" --- Format / filter (,=) ---
+" Visual ':' already inserts '<,'>.
 nnoremap <silent> <leader>=j <Cmd>%!jq<CR>
 nnoremap <silent> <leader>=c <Cmd>%!jq --compact-output<CR>
 xnoremap <silent> <leader>=j :!jq<CR>
 xnoremap <silent> <leader>=c :!jq --compact-output<CR>
-" Strip stray CR. 'e' flag: no E486 when the buffer is already clean.
 nnoremap <silent> <leader>=r :keeppatterns %s/\r//ge<CR>
-" Reindent the buffer. 'mz' / '`z' so the cursor comes back instead of being
-" dumped on the last line by 'G'.
 nnoremap <silent> <leader>=f mzgg=G`z
 
 " --- Terminal ---
@@ -570,17 +463,13 @@ tnoremap <expr> <A-v> getreg('+')
 
 " --- fzf ---
 nnoremap <silent> <Leader>b  :Buffers<CR>
-" Shift flips "text" to "file": ,f/,F take a prompt, ,u/,U take <cword>.
 nnoremap <silent> <Leader>F  :Files<CR>
 nnoremap <silent> <C-f>      :Files<CR>
 nnoremap <silent> <Leader>rg  :Rg<CR>
 nnoremap <silent> <Leader>u  :Rg <C-R><C-W><CR>
 nnoremap <silent> <Leader>ff :FZF -q <C-R><C-W><CR>
-" ,l = fuzzy-jump inside the current file (the IDE's File Structure popup).
 nnoremap <silent> <Leader>l  :BLines<CR>
 nnoremap <silent> <Leader>hh :History<CR>
-" No ',ag' mapping: ',a' (select all) would become a prefix and wait 600 ms.
-" ':Ag <word>' is what ',u' already does anyway, via rg.
 inoremap <expr> <C-x><C-f> fzf#vim#complete(
       \ 'cd ' . shellescape(FindProjectRoot()) . ' && rg --files --hidden')
 imap <C-x><C-l> <plug>(fzf-complete-line)
@@ -596,63 +485,50 @@ nnoremap <silent> <Leader>gp :Git pull<CR>
 nmap <silent> [g <Plug>(ale_previous_wrap)
 nmap <silent> ]g <Plug>(ale_next_wrap)
 
-" --- Visual-selection search and replace (see s:VSetSearch) ---
+" --- Visual-selection search and replace ---
 xnoremap <silent> * :<C-u>call <SID>VSetSearch('/')<CR>/<C-R><C-R>=@/<CR><CR>
 xnoremap <silent> # :<C-u>call <SID>VSetSearch('?')<CR>?<C-R><C-R>=@/<CR><CR>
-" NOT <silent>: the command line has to stay on screen for the replacement.
 xnoremap <leader>r :<C-u>call <SID>VSetSearch('/')<CR>:%s/<C-R><C-R>=@/<CR>//g<Left><Left>
 
 " ============================================================================
-"  Autocommands and functions
+"  Functions and autocommands
 " ============================================================================
-" Global, not script-local: it is called from an <expr> mapping, which is not
-" evaluated in this script's context.
+" Global: called from an <expr> mapping.
 function! FindProjectRoot() abort
   let l:git_root = finddir('.git', '.;')
-  if !empty(l:git_root)
-    return fnamemodify(l:git_root, ':h')
-  endif
-  return expand('%:p:h')
+  return empty(l:git_root) ? expand('%:p:h') : fnamemodify(l:git_root, ':h')
 endfunction
 
-" Yanks into "z, not the unnamed register: that leaves "" intact AND keeps the
-" YankToClipboard autocmd above from firing, so '*' never touches the system
-" clipboard. '\V' (very nomagic) makes the selection literal, so text with
-" '.', '*' or '[' in it is searched for as characters, not as a broken regex.
+" Literal (\V) search for the selection. Yanks via "z so neither "" nor the
+" OS clipboard is touched.
 function! s:VSetSearch(cmdtype) abort
   let l:save_z = getreginfo('z')
   let l:save_unnamed = getreginfo('"')
   normal! gv"zy
-  " A linewise selection carries a trailing newline; unstripped, the pattern
-  " would only match occurrences sitting at end-of-line.
   let l:text = substitute(@z, '\n\+$', '', '')
   let @/ = '\V' . substitute(escape(l:text, a:cmdtype . '\'), '\n', '\\n', 'g')
-  " Yanking into "z also repoints the unnamed register, so restore both.
   call setreg('z', l:save_z)
   call setreg('"', l:save_unnamed)
 endfunction
 
 augroup ProjectConfig
   autocmd!
-  " FileType, not BufRead, so this runs after -- and therefore wins over --
-  " the bundled python ftplugin.
   autocmd FileType python setlocal expandtab autoindent
         \ tabstop=4 softtabstop=4 shiftwidth=4
   autocmd FileType python call s:PythonSetup()
-  " Return to the last edit position, except in commit messages.
   autocmd BufReadPost *
         \ if line("'\"") > 1 && line("'\"") <= line("$")
         \     && &filetype !~# 'commit\|rebase' |
         \   execute "normal! g`\"" |
         \ endif
-  autocmd FocusGained,BufEnter * checktime
-  " Trailing whitespace is significant in these formats -- keep the '*' fixer
-  " from rewriting them on save.
-  autocmd FileType markdown,diff,gitcommit let b:ale_fix_on_save = 0
+  " checktime is E11 in the command-line window.
+  autocmd FocusGained,BufEnter * if getcmdwintype() ==# '' | checktime | endif
+  " Whitespace is significant here; Go is formatted by vim-go (gopls).
+  autocmd FileType markdown,diff,gitcommit,go let b:ale_fix_on_save = 0
 augroup END
 
-" --- Large files ---
-let g:LargeFile = 10 * 1024 * 1024 " 10 MB
+" --- Large files: everything buffer-local, never global ---
+let g:LargeFile = 10 * 1024 * 1024
 
 augroup LargeFile
   autocmd!
@@ -661,10 +537,6 @@ augroup LargeFile
         \ if s:fsize > g:LargeFile || s:fsize == -2 | call s:LargeFileMode() | endif
 augroup END
 
-" Everything here is buffer-local BY DESIGN: a global 'filetype off' /
-" 'eventignore+=FileType' is never restored, so opening one big log would kill
-" syntax and every ftplugin for the WHOLE session. ('syntax=0' is also a
-" no-op -- the value that disables it is OFF.)
 function! s:LargeFileMode() abort
   setlocal noswapfile noundofile nobackup
   setlocal bufhidden=unload

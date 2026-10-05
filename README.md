@@ -209,11 +209,10 @@ history, which git and `undofile` already provide.
 
 ## Known limitations
 
-- **Console gVim fallback.** The config is GUI-first. In a console without the
-  `+vtp` feature, lightline raises `E254: Invalid color name guibg=` because
-  its gruvbox colorscheme is defined in gui colours only. Harmless for the
-  target; the one-line fix is
-  [in the rationale](docs/RATIONALE.md#termguicolors-and-the-console-fallback).
+- **Console fallback.** The config targets the Win32 GUI. Under `vim.exe`,
+  lightline raises `E254: Invalid color name guibg=` because its gruvbox
+  colorscheme is defined in gui colours only. Harmless for the target; the
+  one-line fix is [in the rationale](docs/RATIONALE.md#console-fallback).
 - **IdeaVim `*` / `#` / `,r`** do not escape `/` or newlines in the selection —
   IdeaVim has no expression register on the search line and no `substitute()`.
   Everything else is literal and safe.
